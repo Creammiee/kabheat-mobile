@@ -51,6 +51,14 @@ export default function IoTSensorModal({
   };
 
   const connectedName = hardwareInfo?.deviceName || diagnostics.deviceName || "Device Connected";
+  const connectionBusy = scanning || ["scanning", "connecting", "nus-ready", "subscribing", "reconnecting"].includes(diagnostics.status);
+  const connectionLabel = {
+    scanning: "Scanning for Kabheat…",
+    connecting: "Connecting to Kabheat…",
+    "nus-ready": "Nordic UART Service ready…",
+    subscribing: "Starting live telemetry…",
+    reconnecting: diagnostics.lastTransportError || "Reconnecting to Kabheat…",
+  }[diagnostics.status];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
@@ -80,10 +88,10 @@ export default function IoTSensorModal({
           </p>
           <button
             onClick={bleConnected ? handleDisconnect : handleConnectBLE}
-            disabled={scanning}
-            className={`mt-3 w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${bleConnected ? "bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30" : "bg-gradient-sunset text-white shadow-lg hover:brightness-110"}`}
+            disabled={connectionBusy}
+            className={`mt-3 w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${bleConnected ? "bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30" : "bg-gradient-sunset text-white shadow-lg hover:brightness-110"} disabled:opacity-70`}
           >
-            {scanning ? <><RefreshCw size={14} className="animate-spin" /> Scanning for devices...</> : bleConnected ? "Disconnect Hardware" : <><Bluetooth size={14} /> Connect Device (BLE)</>}
+            {connectionBusy ? <><RefreshCw size={14} className="animate-spin" /> {connectionLabel || "Preparing Bluetooth…"}</> : bleConnected ? "Disconnect Hardware" : <><Bluetooth size={14} /> Connect Kabheat</>}
           </button>
           {(errorMessage || diagnostics.lastTransportError) && (
             <p className="text-[10px] text-red-400 mt-2 bg-red-500/10 p-2 rounded-xl border border-red-500/20">{errorMessage || diagnostics.lastTransportError}</p>

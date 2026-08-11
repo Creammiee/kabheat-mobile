@@ -21,15 +21,29 @@
     --color-danger: var(--tomato-jam);
   }
 
+  html, body, #root {
+    min-height: 100%;
+    background-color: var(--bg-dark);
+  }
+
   body {
     font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background-color: var(--bg-dark, var(--bg-dark));
     color: var(--honeydew, var(--honeydew));
     overflow-x: hidden;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     transition: background-color 0.4s ease, color 0.4s ease, font-family 0.3s ease;
   }
+}
+
+/* Capacitor's Android WebView exposes these values when drawing edge-to-edge. */
+.safe-area-shell {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-area-bottom {
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 /* Glassmorphism utilities */
