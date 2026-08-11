@@ -32,7 +32,7 @@ export default function MobileShell({
   ];
 
   return (
-    <div className="w-full max-w-md mx-auto h-[100dvh] relative flex flex-col overflow-hidden bg-[var(--bg-dark)] text-[var(--honeydew)] shadow-2xl sm:border-x sm:border-white/10">
+    <div className="safe-area-shell w-full max-w-md mx-auto h-[100dvh] relative flex flex-col overflow-hidden bg-[var(--bg-dark)] text-[var(--honeydew)] shadow-2xl sm:border-x sm:border-white/10">
 
         {/* Emergency SOS Banner (If Critical Risk or Triggered) */}
         {criticalAlert && (
@@ -51,12 +51,12 @@ export default function MobileShell({
         )}
 
         {/* Main View Content Area */}
-        <main className="flex-1 overflow-y-auto no-scrollbar pb-24 px-4 pt-3">
+        <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 py-3">
           {children}
         </main>
 
         {/* Floating Glass Bottom Navigation Bar */}
-        <nav className="absolute bottom-0 left-0 right-0 z-40 bg-[var(--bg-dark)]/90 backdrop-blur-xl border-t border-[var(--honeydew)]/10 px-2 py-2 flex items-center justify-around">
+        <nav className="safe-area-bottom shrink-0 z-40 bg-[var(--bg-dark)]/90 backdrop-blur-xl border-t border-[var(--honeydew)]/10 px-2 pt-2 flex items-center justify-around">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
