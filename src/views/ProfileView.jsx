@@ -10,16 +10,21 @@ import {
   ChevronRight,
   Palette,
   Type,
-  Sparkles,
   Layers,
   Globe,
-  RefreshCw,
+  LogOut,
+  Mail,
+  Fingerprint,
+  Plus,
+  Camera
 } from "lucide-react";
 import {
   COLOR_THEME_PRESETS,
   FONT_OPTIONS,
   GLASS_BLUR_OPTIONS,
 } from "../utils/themeEngine";
+
+import AuthModal from "../components/AuthModal";
 
 export default function ProfileView({
   tempUnit,
@@ -30,11 +35,13 @@ export default function ProfileView({
   setEmergencyContacts,
   themeConfig,
   setThemeConfig,
-  openWeatherKey,
-  setOpenWeatherKey,
+  user,
+  authLoading
 }) {
   const [showAddContact, setShowAddContact] = useState(false);
   const [newContact, setNewContact] = useState({ name: "", relation: "", phone: "" });
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const handleAddContact = () => {
     if (newContact.name && newContact.phone) {
@@ -44,40 +51,217 @@ export default function ProfileView({
     }
   };
 
-  return (
-    <div className="space-y-4">
-      {/* User Header Profile Card */}
-      <div className="glass-panel-warm rounded-3xl p-5 border border-white/10 flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-gradient-sunset p-0.5 shadow-lg shrink-0">
-          <div className="w-full h-full rounded-full bg-[var(--bg-dark)] flex items-center justify-center font-bold text-xl text-white">
-            KH
-          </div>
-        </div>
+  const handleAvatarUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-        <div>
-          <h2 className="text-base font-bold text-white">KabHeat User Profile</h2>
-          <p className="text-xs text-[var(--honeydew)]/60">Field Worker Protection ID: #KH-994</p>
-          <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-            Active Safety Protection
-          </span>
-        </div>
+    // Convert image to base64 to save to Firebase Auth profile
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      setUploadingAvatar(true);
+      try {
+        const base64String = event.target.result;
+        const { updateUserProfile } = await import("../services/firebaseService");
+        await updateUserProfile({ photoURL: base64String });
+        // Force a re-render or wait for Auth state to propagate. 
+        // Note: Firebase Auth listener might not instantly fire for profile updates,
+        // but user.photoURL will be updated in the object.
+      } catch (err) {
+        console.error("Failed to upload avatar", err);
+      } finally {
+        setUploadingAvatar(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  if (authLoading) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-white/10 border-t-[var(--sky-blue)] rounded-full animate-spin"></div>
       </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 pb-6">
+
+      {user ? (
+        <>
+          {/* Real User Profile Card */}
+          <div className="relative overflow-hidden rounded-3xl p-5 border border-[var(--coral-glow)]/20 shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left transition-all">
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-[var(--coral-glow)]/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div className="relative z-10">
+              <div className="w-20 h-20 rounded-full bg-gradient-sunset p-[2px] shadow-lg shrink-0 relative group">
+                <div className="w-full h-full rounded-full bg-[var(--bg-dark)] flex items-center justify-center font-extrabold text-2xl text-[var(--honeydew)] uppercase overflow-hidden relative">
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    user.email ? user.email.substring(0, 2) : "KH"
+                  )}
+                  {/* Hover/Tap Overlay for Upload */}
+                  <label className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                    {uploadingAvatar ? (
+                      <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>
+                    ) : (
+                      <Camera size={20} className="text-white" />
+                    )}
+                    <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                  </label>
+                </div>
+              </div>
+              <div className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-full p-1.5 border-2 border-[var(--bg-dark)] shadow-md">
+                <ShieldAlert size={12} className="text-white" />
+              </div>
+            </div>
+
+            <div className="flex-1 flex flex-col items-center sm:items-start z-10">
+              <h2 className="text-xl font-black text-[var(--honeydew)] tracking-tight">User Profile</h2>
+              <div className="flex flex-col gap-1 mt-1.5">
+                <div className="flex items-center gap-2 text-xs font-medium text-[var(--honeydew)]/70">
+                  <Fingerprint size={14} className="text-[var(--sky-blue)]" /> UID: {user.uid.substring(0, 10)}...
+                </div>
+                <div className="flex items-center gap-2 text-xs font-medium text-[var(--honeydew)]/70">
+                  <Mail size={14} className="text-[var(--soft-peach)]" /> {user.email}
+                </div>
+              </div>
+              
+              <div className="mt-4 flex gap-2">
+                <span className="px-3 py-1 rounded-full text-[10px] font-extrabold tracking-wide uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-sm">
+                  Authenticated
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Emergency SOS Contacts (Restored & Upgraded) */}
+          <div className="glass-panel rounded-3xl p-5 border border-red-500/20 shadow-lg relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="flex items-center justify-between mb-4 relative z-10">
+              <h3 className="text-sm font-black text-red-400 tracking-tight flex items-center gap-2">
+                <Phone size={18} /> Emergency SOS Contacts
+              </h3>
+              <span className="px-2.5 py-1 rounded-lg bg-red-500/10 text-[10px] font-extrabold text-red-400 border border-red-500/20">
+                {emergencyContacts.length} Active
+              </span>
+            </div>
+
+            <div className="space-y-3 relative z-10">
+              {emergencyContacts.map((contact, idx) => (
+                <div key={idx} className="flex items-center justify-between bg-black/30 p-4 rounded-2xl border border-white/5 shadow-inner group transition-all hover:bg-black/40">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20">
+                      <User size={18} className="text-red-400" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-[var(--honeydew)]">{contact.name}</div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] uppercase font-bold text-[var(--honeydew)]/50 tracking-wide">{contact.relation}</span>
+                        <span className="text-[10px] text-[var(--honeydew)]/30">•</span>
+                        <span className="text-[11px] font-mono text-[var(--honeydew)]/60">{contact.phone}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <CheckCircle2 size={18} className="text-emerald-500 opacity-80" />
+                </div>
+              ))}
+
+              {showAddContact ? (
+                <div className="bg-black/40 p-4 rounded-2xl border border-[var(--coral-glow)]/30 shadow-inner space-y-3 mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <h4 className="text-xs font-bold text-[var(--coral-glow)] uppercase tracking-wider mb-2">New SOS Contact</h4>
+                  <input
+                    type="text"
+                    placeholder="Full Name (e.g. Jane Doe)"
+                    value={newContact.name}
+                    onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-[var(--honeydew)] placeholder-[var(--honeydew)]/30 focus:outline-none focus:border-[var(--coral-glow)] focus:ring-1 focus:ring-[var(--coral-glow)]/50 transition-all shadow-inner"
+                  />
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      placeholder="Relation (Manager)"
+                      value={newContact.relation}
+                      onChange={(e) => setNewContact({ ...newContact, relation: e.target.value })}
+                      className="w-1/2 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-[var(--honeydew)] placeholder-[var(--honeydew)]/30 focus:outline-none focus:border-[var(--coral-glow)] focus:ring-1 focus:ring-[var(--coral-glow)]/50 transition-all shadow-inner"
+                    />
+                    <input
+                      type="tel"
+                      placeholder="Phone Number"
+                      value={newContact.phone}
+                      onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
+                      className="w-1/2 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-[var(--honeydew)] placeholder-[var(--honeydew)]/30 focus:outline-none focus:border-[var(--coral-glow)] focus:ring-1 focus:ring-[var(--coral-glow)]/50 transition-all shadow-inner"
+                    />
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={handleAddContact}
+                      className="flex-1 py-3 bg-[var(--coral-glow)] hover:bg-[var(--coral-glow)]/90 text-white text-xs font-black rounded-xl transition-all shadow-[0_0_15px_rgba(250,133,90,0.3)]"
+                    >
+                      Save Contact
+                    </button>
+                    <button
+                      onClick={() => setShowAddContact(false)}
+                      className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--honeydew)]/70 text-xs font-bold rounded-xl transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowAddContact(true)}
+                  className="w-full py-4 mt-2 rounded-2xl bg-white/5 border border-white/10 border-dashed hover:border-[var(--coral-glow)]/50 hover:bg-white/10 hover:text-[var(--coral-glow)] text-[var(--honeydew)]/60 text-xs font-bold transition-all flex items-center justify-center gap-2 group"
+                >
+                  <Plus size={16} className="text-[var(--honeydew)]/40 group-hover:text-[var(--coral-glow)] transition-colors" /> 
+                  Add Emergency Contact
+                </button>
+              )}
+            </div>
+          </div>
+
+          <button 
+            onClick={async () => {
+              const { logoutUser } = await import("../services/firebaseService");
+              await logoutUser();
+            }}
+            className="w-full py-4 mt-2 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-black hover:bg-red-500/20 hover:shadow-[0_0_20px_rgba(239,68,68,0.2)] transition-all flex items-center justify-center gap-2"
+          >
+            <LogOut size={18} /> Secure Sign Out
+          </button>
+        </>
+      ) : (
+        <div className="relative overflow-hidden rounded-3xl p-5 border border-white/10 bg-black/20 shadow-lg flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left transition-all">
+          <div className="w-16 h-16 rounded-full bg-white/5 p-4 flex items-center justify-center shrink-0 border border-white/10 shadow-inner">
+            <User size={28} className="text-[var(--honeydew)]/40" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-lg font-black text-white">Login / Register</h2>
+            <p className="text-xs text-[var(--honeydew)]/50 mt-1 font-medium">Create an account to track heat logs across devices, set up emergency contacts, and personalize your profile.</p>
+          </div>
+          <button 
+            onClick={() => setShowAuthModal(true)}
+            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[var(--sky-blue)] text-[var(--bg-dark)] text-sm font-black hover:bg-[var(--sky-blue)]/90 transition-all shadow-[0_0_15px_rgba(98,196,218,0.3)]"
+          >
+            Authenticate
+          </button>
+        </div>
+      )}
 
       {/* UI THEME, COLORS & FONTS CUSTOMIZATION PANEL */}
-      <div className="glass-panel rounded-3xl p-4 border border-[var(--sky-blue)]/30 space-y-4 bg-gradient-to-b from-white/5 to-transparent">
-        <div className="flex items-center justify-between border-b border-white/10 pb-2">
-          <h3 className="text-xs font-bold text-[var(--sky-blue)] uppercase tracking-wider flex items-center gap-1.5">
-            <Palette size={16} /> UI Theme & Font Customization
+      <div className="glass-panel rounded-3xl p-5 border border-white/5 space-y-5 shadow-lg">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-black text-[var(--sky-blue)] tracking-tight flex items-center gap-2">
+            <Palette size={18} /> UI Engine & Theme
           </h3>
-          <span className="text-[10px] text-white/50">Live Styling Engine</span>
         </div>
 
         {/* Color Palette Presets */}
-        <div>
-          <label className="text-xs font-bold text-white block mb-2">Color Theme Presets</label>
-          <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-3">
+          <label className="text-xs font-bold text-[var(--honeydew)]/80 uppercase tracking-wide">Curated Aesthetics</label>
+          <div className={`grid grid-cols-2 gap-3 transition-all duration-300 ${themeConfig?.useCustomColors ? 'opacity-40 grayscale pointer-events-none scale-[0.98]' : 'opacity-100'}`}>
             {COLOR_THEME_PRESETS.map((preset) => {
-              const isSelected = themeConfig?.presetId === preset.id;
+              const isSelected = themeConfig?.presetId === preset.id && !themeConfig?.useCustomColors;
               return (
                 <button
                   key={preset.id}
@@ -88,95 +272,100 @@ export default function ProfileView({
                       useCustomColors: false,
                     }))
                   }
-                  className={`p-2.5 rounded-2xl border text-left flex items-center justify-between transition-all ${
+                  className={`p-3.5 rounded-2xl border text-left flex flex-col gap-3 transition-all duration-300 ${
                     isSelected
-                      ? "border-[var(--sky-blue)] bg-[var(--sky-blue)]/15 shadow-md"
-                      : "border-white/10 bg-white/5 hover:bg-white/10"
+                      ? "border-[var(--sky-blue)] bg-[var(--sky-blue)]/10 shadow-[0_0_15px_rgba(98,196,218,0.15)] scale-[1.02]"
+                      : "border-white/5 bg-black/20 hover:bg-white/5"
                   }`}
                 >
-                  <div>
-                    <div className="text-xs font-bold text-white">{preset.name}</div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: preset.primary }} />
-                      <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: preset.accent }} />
-                      <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: preset.danger }} />
-                    </div>
+                  <div className="flex justify-between items-center w-full">
+                    <div className="text-xs font-extrabold text-[var(--honeydew)]">{preset.name}</div>
+                    {isSelected && <CheckCircle2 size={16} className="text-[var(--sky-blue)]" />}
                   </div>
-                  {isSelected && <CheckCircle2 size={16} className="text-[var(--sky-blue)]" />}
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 rounded-full shadow-inner border border-white/10" style={{ backgroundColor: preset.primary }} />
+                    <span className="w-4 h-4 rounded-full shadow-inner border border-white/10" style={{ backgroundColor: preset.accent }} />
+                    <span className="w-4 h-4 rounded-full shadow-inner border border-white/10" style={{ backgroundColor: preset.danger }} />
+                  </div>
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Custom Color Pickers */}
-        <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-3">
+        {/* Custom Colors Picker */}
+        <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-white">Custom Brand Colors</span>
-            <button
-              onClick={() =>
-                setThemeConfig((prev) => ({
-                  ...prev,
-                  useCustomColors: !prev.useCustomColors,
-                }))
-              }
-              className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all ${
-                themeConfig?.useCustomColors
-                  ? "bg-[var(--coral-glow)] text-white border-[var(--coral-glow)]"
-                  : "bg-white/5 text-white/60 border-white/10"
-              }`}
-            >
-              {themeConfig?.useCustomColors ? "Custom Active" : "Enable Custom Colors"}
-            </button>
+            <label className="text-xs font-bold text-[var(--honeydew)]/80 uppercase tracking-wide">Custom Aesthetics</label>
+            <label className="flex items-center gap-2 cursor-pointer bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
+              <span className="text-[10px] font-bold text-[var(--honeydew)] uppercase tracking-wider">Enable</span>
+              <input 
+                type="checkbox" 
+                checked={themeConfig?.useCustomColors || false}
+                onChange={(e) => setThemeConfig(prev => ({ ...prev, useCustomColors: e.target.checked }))}
+                className="w-3.5 h-3.5 rounded border-white/20 bg-black/40 text-[var(--sky-blue)] focus:ring-[var(--sky-blue)]/50 cursor-pointer"
+              />
+            </label>
           </div>
-
-          {themeConfig?.useCustomColors && (
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div>
-                <label className="text-[10px] text-white/70 block mb-1">Primary Color</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={themeConfig.customPrimary || "var(--coral-glow)"}
-                    onChange={(e) =>
-                      setThemeConfig((prev) => ({
-                        ...prev,
-                        customPrimary: e.target.value,
-                      }))
-                    }
-                    className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0"
-                  />
-                  <span className="text-xs font-mono text-white">{themeConfig.customPrimary}</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[10px] text-white/70 block mb-1">Accent Color</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={themeConfig.customAccent || "var(--sky-blue)"}
-                    onChange={(e) =>
-                      setThemeConfig((prev) => ({
-                        ...prev,
-                        customAccent: e.target.value,
-                      }))
-                    }
-                    className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0"
-                  />
-                  <span className="text-xs font-mono text-white">{themeConfig.customAccent}</span>
-                </div>
+          
+          <div className={`grid grid-cols-2 gap-3 transition-all duration-300 ${themeConfig?.useCustomColors ? 'opacity-100 scale-100' : 'opacity-40 scale-[0.98] pointer-events-none'}`}>
+            <div className="p-3 rounded-xl border border-white/5 bg-black/20 flex items-center justify-between shadow-inner">
+              <span className="text-xs font-bold text-[var(--honeydew)]">Primary</span>
+              <div className="w-8 h-8 rounded overflow-hidden border border-white/20 shadow-md">
+                <input type="color" value={themeConfig?.customPrimary || "#FA855A"} onChange={(e) => setThemeConfig(prev => ({ ...prev, customPrimary: e.target.value, useCustomColors: true }))} className="w-16 h-16 -mt-4 -ml-4 cursor-pointer" />
               </div>
             </div>
-          )}
+            <div className="p-3 rounded-xl border border-white/5 bg-black/20 flex items-center justify-between shadow-inner">
+              <span className="text-xs font-bold text-[var(--honeydew)]">Accent</span>
+              <div className="w-8 h-8 rounded overflow-hidden border border-white/20 shadow-md">
+                <input type="color" value={themeConfig?.customAccent || "#62C4DA"} onChange={(e) => setThemeConfig(prev => ({ ...prev, customAccent: e.target.value, useCustomColors: true }))} className="w-16 h-16 -mt-4 -ml-4 cursor-pointer" />
+              </div>
+            </div>
+            <div className="p-3 rounded-xl border border-white/5 bg-black/20 flex items-center justify-between shadow-inner">
+              <span className="text-xs font-bold text-[var(--honeydew)]">Warning</span>
+              <div className="w-8 h-8 rounded overflow-hidden border border-white/20 shadow-md">
+                <input type="color" value={themeConfig?.customWarning || "#FFDE96"} onChange={(e) => setThemeConfig(prev => ({ ...prev, customWarning: e.target.value, useCustomColors: true }))} className="w-16 h-16 -mt-4 -ml-4 cursor-pointer" />
+              </div>
+            </div>
+            <div className="p-3 rounded-xl border border-white/5 bg-black/20 flex items-center justify-between shadow-inner">
+              <span className="text-xs font-bold text-[var(--honeydew)]">Danger</span>
+              <div className="w-8 h-8 rounded overflow-hidden border border-white/20 shadow-md">
+                <input type="color" value={themeConfig?.customDanger || "#C93638"} onChange={(e) => setThemeConfig(prev => ({ ...prev, customDanger: e.target.value, useCustomColors: true }))} className="w-16 h-16 -mt-4 -ml-4 cursor-pointer" />
+              </div>
+            </div>
+            <div className="p-3 rounded-xl border border-white/5 bg-black/20 flex items-center justify-between shadow-inner">
+              <span className="text-xs font-bold text-[var(--honeydew)]">Background</span>
+              <div className="w-8 h-8 rounded overflow-hidden border border-white/20 shadow-md">
+                <input type="color" value={themeConfig?.customBgDark || "#0C0A14"} onChange={(e) => setThemeConfig(prev => ({ ...prev, customBgDark: e.target.value, useCustomColors: true }))} className="w-16 h-16 -mt-4 -ml-4 cursor-pointer" />
+              </div>
+            </div>
+            <div className="p-3 rounded-xl border border-white/5 bg-black/20 flex items-center justify-between shadow-inner">
+              <span className="text-xs font-bold text-[var(--honeydew)]">Text</span>
+              <div className="w-8 h-8 rounded overflow-hidden border border-white/20 shadow-md">
+                <input type="color" value={themeConfig?.customTextMain || "#F6FFEA"} onChange={(e) => setThemeConfig(prev => ({ ...prev, customTextMain: e.target.value, useCustomColors: true }))} className="w-16 h-16 -mt-4 -ml-4 cursor-pointer" />
+              </div>
+            </div>
+            <div className="p-3 rounded-xl border border-white/5 bg-black/20 flex items-center justify-between shadow-inner">
+              <span className="text-xs font-bold text-[var(--honeydew)]">Card Bg</span>
+              <div className="w-8 h-8 rounded overflow-hidden border border-white/20 shadow-md">
+                <input type="color" value={themeConfig?.customCardBg || "#2A2A35"} onChange={(e) => setThemeConfig(prev => ({ ...prev, customCardBg: e.target.value, useCustomColors: true }))} className="w-16 h-16 -mt-4 -ml-4 cursor-pointer" />
+              </div>
+            </div>
+            <div className="p-3 rounded-xl border border-white/5 bg-black/20 flex items-center justify-between shadow-inner">
+              <span className="text-xs font-bold text-[var(--honeydew)]">Card Border</span>
+              <div className="w-8 h-8 rounded overflow-hidden border border-white/20 shadow-md">
+                <input type="color" value={themeConfig?.customCardBorder || "#3F3F4A"} onChange={(e) => setThemeConfig(prev => ({ ...prev, customCardBorder: e.target.value, useCustomColors: true }))} className="w-16 h-16 -mt-4 -ml-4 cursor-pointer" />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Font Family Selector */}
-        <div>
-          <label className="text-xs font-bold text-white flex items-center gap-1.5 mb-2">
-            <Type size={14} className="text-[var(--soft-peach)]" /> Typography & Font Family
+        <div className="space-y-3 pt-2">
+          <label className="text-xs font-bold text-[var(--honeydew)]/80 uppercase tracking-wide flex items-center gap-2">
+            <Type size={14} className="text-[var(--soft-peach)]" /> Typography
           </label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             {FONT_OPTIONS.map((font) => {
               const isSelected = themeConfig?.fontId === font.id;
               return (
@@ -188,15 +377,15 @@ export default function ProfileView({
                       fontId: font.id,
                     }))
                   }
-                  className={`p-2.5 rounded-2xl border text-left transition-all ${
+                  className={`p-3.5 rounded-2xl border text-left transition-all duration-300 ${
                     isSelected
-                      ? "border-[var(--soft-peach)] bg-[var(--soft-peach)]/15 shadow-md"
-                      : "border-white/10 bg-white/5 hover:bg-white/10"
+                      ? "border-[var(--soft-peach)] bg-[var(--soft-peach)]/10 shadow-[0_0_15px_rgba(255,222,150,0.15)] scale-[1.02]"
+                      : "border-white/5 bg-black/20 hover:bg-white/5"
                   }`}
                   style={{ fontFamily: font.family }}
                 >
-                  <div className="text-xs font-bold text-white">{font.id}</div>
-                  <div className="text-[9px] text-white/60 truncate mt-0.5">Sample Text Aa123</div>
+                  <div className="text-sm font-black text-[var(--honeydew)]">{font.id}</div>
+                  <div className="text-[11px] text-[var(--honeydew)]/50 truncate mt-1 font-medium">KabHeat Aa123</div>
                 </button>
               );
             })}
@@ -204,11 +393,11 @@ export default function ProfileView({
         </div>
 
         {/* Glassmorphism Blur Intensity */}
-        <div>
-          <label className="text-xs font-bold text-white flex items-center gap-1.5 mb-2">
-            <Layers size={14} className="text-emerald-400" /> Card Glassmorphism Backdrop
+        <div className="space-y-3 pt-2">
+          <label className="text-xs font-bold text-[var(--honeydew)]/80 uppercase tracking-wide flex items-center gap-2">
+            <Layers size={14} className="text-emerald-400" /> Material Frosting
           </label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             {GLASS_BLUR_OPTIONS.map((glass) => {
               const isSelected = themeConfig?.glassBlur === glass.id;
               return (
@@ -220,10 +409,10 @@ export default function ProfileView({
                       glassBlur: glass.id,
                     }))
                   }
-                  className={`p-2 rounded-xl text-xs font-semibold border transition-all text-center ${
+                  className={`p-3 rounded-xl text-xs font-bold border transition-all text-center ${
                     isSelected
-                      ? "border-emerald-400 bg-emerald-500/20 text-white"
-                      : "border-white/10 bg-white/5 text-white/70"
+                      ? "border-emerald-400 bg-emerald-500/10 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.15)] scale-[1.02]"
+                      : "border-white/5 bg-black/20 text-[var(--honeydew)]/60 hover:bg-white/5"
                   }`}
                 >
                   {glass.name}
@@ -234,168 +423,9 @@ export default function ProfileView({
         </div>
       </div>
 
-      {/* Removed AI MACHINE LEARNING MODEL CONFIGURATION PANEL */}
+      {/* Auth Modal */}
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
 
-      {/* Temperature Unit Preference */}
-      <div className="glass-panel rounded-3xl p-4 border border-white/10 space-y-3">
-        <h3 className="text-xs font-bold text-[var(--soft-peach)] uppercase tracking-wider flex items-center gap-1.5">
-          <Sliders size={14} /> Display Preferences
-        </h3>
-
-        <div className="flex items-center justify-between bg-white/5 p-3 rounded-2xl">
-          <div>
-            <div className="text-xs font-bold text-white">Temperature Unit</div>
-            <p className="text-[10px] text-[var(--honeydew)]/50">Choose Celsius (°C) or Fahrenheit (°F)</p>
-          </div>
-
-          <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/10">
-            <button
-              onClick={() => setTempUnit("celsius")}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                tempUnit === "celsius" ? "bg-[var(--coral-glow)] text-white" : "text-[var(--honeydew)]/50"
-              }`}
-            >
-              °C
-            </button>
-            <button
-              onClick={() => setTempUnit("fahrenheit")}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                tempUnit === "fahrenheit" ? "bg-[var(--coral-glow)] text-white" : "text-[var(--honeydew)]/50"
-              }`}
-            >
-              °F
-            </button>
-          </div>
-        </div>
-
-        {/* Heat Stroke Alert Threshold Slider */}
-        <div className="bg-white/5 p-3 rounded-2xl space-y-2">
-          <div className="flex justify-between text-xs">
-            <span className="font-bold text-white">Critical Alert Threshold:</span>
-            <span className="font-extrabold text-[var(--coral-glow)]">{alertThreshold}°C</span>
-          </div>
-          <input
-            type="range"
-            min="38"
-            max="52"
-            step="1"
-            value={alertThreshold}
-            onChange={(e) => setAlertThreshold(parseInt(e.target.value))}
-            className="w-full accent-[var(--coral-glow)] cursor-pointer"
-          />
-          <p className="text-[10px] text-[var(--honeydew)]/50">
-            Triggers high-decibel audio warning & emergency SMS when Heat Index reaches this level.
-          </p>
-        </div>
-      </div>
-
-      {/* External Integrations */}
-      <div className="glass-panel rounded-3xl p-4 border border-white/10 space-y-3">
-        <h3 className="text-xs font-bold text-[var(--sky-blue)] uppercase tracking-wider flex items-center gap-1.5">
-          <Globe size={14} /> External Integrations
-        </h3>
-        
-        <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-2">
-          <div className="text-xs font-bold text-white flex justify-between">
-            <span>OpenWeatherMap API Key</span>
-            {openWeatherKey && <CheckCircle2 size={14} className="text-emerald-400" />}
-          </div>
-          <p className="text-[10px] text-[var(--honeydew)]/60">
-            Provide an API key to fetch high-precision real-time environmental data. If left blank, the app uses a free, limited public fallback.
-          </p>
-          <input
-            type="text"
-            placeholder="e.g. 1a2b3c4d5e6f7g8h9i0j..."
-            value={openWeatherKey}
-            onChange={(e) => setOpenWeatherKey(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[var(--sky-blue)]"
-          />
-        </div>
-      </div>
-
-      {/* Emergency Contacts List */}
-      <div className="glass-panel rounded-3xl p-4 border border-white/10 space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold text-[var(--coral-glow)] uppercase tracking-wider flex items-center gap-1.5">
-            <Phone size={14} /> Emergency SOS Contacts
-          </h3>
-          <span className="text-[10px] text-emerald-400 font-semibold">{emergencyContacts.length} Active Contacts</span>
-        </div>
-
-        <div className="space-y-2">
-          {emergencyContacts.map((contact, idx) => (
-            <div key={idx} className="flex items-center justify-between bg-white/5 p-3 rounded-2xl border border-white/5">
-              <div>
-                <div className="text-xs font-bold text-white">{contact.name}</div>
-                <p className="text-[10px] text-[var(--honeydew)]/50">{contact.relation} | {contact.phone}</p>
-              </div>
-              <span className="p-1.5 rounded-full bg-emerald-500/20 text-emerald-400">
-                <CheckCircle2 size={16} />
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {showAddContact ? (
-          <div className="bg-black/40 p-3 rounded-2xl border border-white/10 mt-3 space-y-2">
-            <input
-              type="text"
-              placeholder="Name (e.g. Jane Doe)"
-              value={newContact.name}
-              onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-[var(--coral-glow)]"
-            />
-            <input
-              type="text"
-              placeholder="Relation (e.g. Manager)"
-              value={newContact.relation}
-              onChange={(e) => setNewContact({ ...newContact, relation: e.target.value })}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-[var(--coral-glow)]"
-            />
-            <input
-              type="tel"
-              placeholder="Phone Number"
-              value={newContact.phone}
-              onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-[var(--coral-glow)]"
-            />
-            <div className="flex gap-2 pt-1">
-              <button
-                onClick={handleAddContact}
-                className="flex-1 py-1.5 bg-[var(--coral-glow)] text-white text-[11px] font-bold rounded-lg transition-all"
-              >
-                Save Contact
-              </button>
-              <button
-                onClick={() => setShowAddContact(false)}
-                className="flex-1 py-1.5 bg-white/10 text-white/70 text-[11px] font-bold rounded-lg transition-all"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setShowAddContact(true)}
-            className="w-full py-2 mt-2 rounded-xl bg-white/5 border border-white/10 border-dashed text-[var(--coral-glow)] text-xs font-bold hover:bg-white/10 transition-all"
-          >
-            + Add New Contact
-          </button>
-        )}
-      </div>
-
-      {/* Hardware Diagnostics */}
-      <div className="glass-panel rounded-3xl p-4 border border-white/10 flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2">
-          <Cpu className="text-[var(--sky-blue)]" size={18} />
-          <div>
-            <div className="font-bold text-white">KabHeat Firmware Diagnostics</div>
-            <div className="text-[10px] text-[var(--honeydew)]/50">Firmware Build 2.4.0 (Latest)</div>
-          </div>
-        </div>
-        <ChevronRight size={16} className="text-[var(--honeydew)]/40" />
-      </div>
     </div>
   );
 }
-

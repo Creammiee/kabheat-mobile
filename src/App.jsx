@@ -10,27 +10,39 @@ import EmergencySOSModal from "./components/EmergencySOSModal";
 import AddLogModal from "./components/AddLogModal";
 import { calculateHeatIndex, getHeatRiskLevel, INITIAL_HEAT_LOGS } from "./utils/heatIndex";
 import { applyTheme, DEFAULT_THEME_CONFIG } from "./utils/themeEngine";
-import { saveHeatLogToCloud, fetchRecentHeatLogs } from "./services/firebaseService";
+import { saveHeatLogToCloud, fetchRecentHeatLogs, auth } from "./services/firebaseService";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("home");
-  const [tempUnit, setTempUnit] = useState("celsius");
-  const [alertThreshold, setAlertThreshold] = useState(45);
+  const [tempUnit, setTempUnit] = useState(() => localStorage.getItem("kabheat_tempUnit") || "celsius");
+  const [alertThreshold, setAlertThreshold] = useState(() => {
+    const saved = localStorage.getItem("kabheat_alertThreshold");
+    return saved ? JSON.parse(saved) : 45;
+  });
+
+  useEffect(() => localStorage.setItem("kabheat_tempUnit", tempUnit), [tempUnit]);
+  useEffect(() => localStorage.setItem("kabheat_alertThreshold", JSON.stringify(alertThreshold)), [alertThreshold]);
   const [bleConnected, setBleConnected] = useState(false);
-
-  // API Keys
-  const [openWeatherKey, setOpenWeatherKey] = useState(
-    localStorage.getItem("openWeatherKey") || ""
-  );
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    localStorage.setItem("openWeatherKey", openWeatherKey);
-  }, [openWeatherKey]);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  // UI Customization State
-  const [themeConfig, setThemeConfig] = useState(DEFAULT_THEME_CONFIG);
+  // UI Customization State (Persisted)
+  const [themeConfig, setThemeConfig] = useState(() => {
+    const saved = localStorage.getItem("kabheat_themeConfig");
+    return saved ? JSON.parse(saved) : DEFAULT_THEME_CONFIG;
+  });
 
   useEffect(() => {
+    localStorage.setItem("kabheat_themeConfig", JSON.stringify(themeConfig));
     applyTheme(themeConfig);
   }, [themeConfig]);
 
@@ -62,8 +74,15 @@ export default function App() {
   // Heat Logs List
   const [logs, setLogs] = useState(INITIAL_HEAT_LOGS);
 
-  // Emergency Contacts
-  const [emergencyContacts, setEmergencyContacts] = useState([]);
+  // Emergency Contacts (Persisted)
+  const [emergencyContacts, setEmergencyContacts] = useState(() => {
+    const saved = localStorage.getItem("kabheat_emergencyContacts");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem("kabheat_emergencyContacts", JSON.stringify(emergencyContacts));
+  }, [emergencyContacts]);
 
   // Real-time calculated heat index (Heuristic)
   const heatIndex = calculateHeatIndex(telemetry.ambientTemp, telemetry.humidity);
@@ -105,22 +124,11 @@ export default function App() {
 
     const fetchWeather = async () => {
       try {
-        let url = `https://api.open-meteo.com/v1/forecast?latitude=${telemetry.latitude}&longitude=${telemetry.longitude}&current=temperature_2m,relative_humidity_2m`;
-        
-        if (openWeatherKey) {
-          url = `https://api.openweathermap.org/data/2.5/weather?lat=${telemetry.latitude}&lon=${telemetry.longitude}&units=metric&appid=${openWeatherKey}`;
-        }
-
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${telemetry.latitude}&longitude=${telemetry.longitude}&current=temperature_2m,relative_humidity_2m`;
         const res = await fetch(url);
         const data = await res.json();
         
-        if (openWeatherKey && data && data.main) {
-          setTelemetry((prev) => ({
-            ...prev,
-            ambientTemp: data.main.temp,
-            humidity: data.main.humidity
-          }));
-        } else if (!openWeatherKey && data && data.current) {
+        if (data && data.current) {
           setTelemetry((prev) => ({
             ...prev,
             ambientTemp: data.current.temperature_2m,
@@ -140,8 +148,7 @@ export default function App() {
   }, [
     // Coarse dependency: only re-fetch if location changes by ~11km (0.1 degrees)
     telemetry.latitude ? telemetry.latitude.toFixed(1) : null,
-    telemetry.longitude ? telemetry.longitude.toFixed(1) : null,
-    openWeatherKey // re-fetch if they change the API key
+    telemetry.longitude ? telemetry.longitude.toFixed(1) : null
   ]);
 
   // Add Log Handler
@@ -228,8 +235,8 @@ export default function App() {
           setEmergencyContacts={setEmergencyContacts}
           themeConfig={themeConfig}
           setThemeConfig={setThemeConfig}
-          openWeatherKey={openWeatherKey}
-          setOpenWeatherKey={setOpenWeatherKey}
+          user={user}
+          authLoading={authLoading}
         />
       )}
 

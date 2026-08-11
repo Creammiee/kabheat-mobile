@@ -22,18 +22,6 @@ export default function MobileShell({
   criticalAlert,
   riskLevel
 }) {
-  const [timeStr, setTimeStr] = useState("");
-  const [frameMode, setFrameMode] = useState(false); // Toggle mobile simulator frame view on desktop
-
-  useEffect(() => {
-    const updateClock = () => {
-      const now = new Date();
-      setTimeStr(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
-    };
-    updateClock();
-    const interval = setInterval(updateClock, 10000);
-    return () => clearInterval(interval);
-  }, []);
 
   const navItems = [
     { id: "home", label: "Overview", icon: Flame },
@@ -44,31 +32,7 @@ export default function MobileShell({
   ];
 
   return (
-    <div className="w-full h-[100dvh] relative flex flex-col overflow-hidden bg-[var(--bg-dark)] text-[var(--honeydew)]">
-      {/* Mobile Top Status Bar */}
-        <header className="sticky top-0 z-40 bg-[#0C0A14]/90 backdrop-blur-md px-5 pt-3 pb-2 flex items-center justify-between border-b border-white/5">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-extrabold text-white tracking-tight">{timeStr || "12:00"}</span>
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[var(--coral-glow)]/20 text-[var(--coral-glow)] uppercase border border-[var(--coral-glow)]/30">
-              v2.4 IoT
-            </span>
-          </div>
-
-          {/* Dynamic App Brand & Device Status Indicator */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setOpenIoTPairing(true)}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all ${
-                bleConnected
-                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                  : "bg-amber-500/15 text-amber-300 border border-amber-500/30 animate-pulse"
-              }`}
-            >
-              {bleConnected ? <Wifi size={12} /> : <WifiOff size={12} />}
-              {bleConnected ? "IoT Connected" : "Pair IoT Band"}
-            </button>
-          </div>
-        </header>
+    <div className="w-full max-w-md mx-auto h-[100dvh] relative flex flex-col overflow-hidden bg-[var(--bg-dark)] text-[var(--honeydew)] shadow-2xl sm:border-x sm:border-white/10">
 
         {/* Emergency SOS Banner (If Critical Risk or Triggered) */}
         {criticalAlert && (
@@ -92,7 +56,7 @@ export default function MobileShell({
         </main>
 
         {/* Floating Glass Bottom Navigation Bar */}
-        <nav className="absolute bottom-0 left-0 right-0 z-40 bg-[#0C0A14]/90 backdrop-blur-xl border-t border-white/10 px-2 py-2 flex items-center justify-around">
+        <nav className="absolute bottom-0 left-0 right-0 z-40 bg-[var(--bg-dark)]/90 backdrop-blur-xl border-t border-[var(--honeydew)]/10 px-2 py-2 flex items-center justify-around">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;

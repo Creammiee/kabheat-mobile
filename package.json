@@ -12,6 +12,7 @@
     "@capacitor-community/bluetooth-le": "^8.2.0",
     "@capacitor/android": "^8.5.0",
     "@capacitor/core": "^8.5.0",
+    "@capacitor/geolocation": "^8.2.1",
     "@capacitor/ios": "^8.5.0",
     "firebase": "^12.17.1",
     "lucide-react": "^0.475.0",

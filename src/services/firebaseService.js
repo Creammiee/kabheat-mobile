@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, enableIndexedDbPersistence, collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -13,10 +14,12 @@ const firebaseConfig = {
 
 let app;
 let db;
+let auth;
 
 try {
   app = initializeApp(firebaseConfig);
   db = getFirestore(app);
+  auth = getAuth(app);
 
   // Enable offline persistence
   enableIndexedDbPersistence(db)
@@ -92,5 +95,29 @@ export async function fetchRecentHeatLogs(maxLogs = 50) {
   }
 }
 
-export { db };
+// -------------------------------------------------------------
+// Authentication Helpers
+// -------------------------------------------------------------
+
+export async function loginUser(email, password) {
+  if (!auth) throw new Error("Firebase Auth not initialized");
+  return signInWithEmailAndPassword(auth, email, password);
+}
+
+export async function registerUser(email, password) {
+  if (!auth) throw new Error("Firebase Auth not initialized");
+  return createUserWithEmailAndPassword(auth, email, password);
+}
+
+export async function logoutUser() {
+  if (!auth) throw new Error("Firebase Auth not initialized");
+  return signOut(auth);
+}
+
+export async function updateUserProfile(profileData) {
+  if (!auth.currentUser) throw new Error("No user logged in");
+  return updateProfile(auth.currentUser, profileData);
+}
+
+export { db, auth };
 
