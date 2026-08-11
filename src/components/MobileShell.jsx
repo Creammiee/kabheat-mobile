@@ -85,13 +85,8 @@ export default function MobileShell({
               }`}
             >
               {bleConnected ? <Wifi size={12} /> : <WifiOff size={12} />}
-              {bleConnected ? "Band 2 Connected" : "Pair IoT Band"}
+              {bleConnected ? "IoT Connected" : "Pair IoT Band"}
             </button>
-
-            <div className="flex items-center text-xs text-emerald-400 gap-1 font-medium">
-              <Battery size={14} />
-              <span className="text-[10px]">94%</span>
-            </div>
           </div>
         </header>
 

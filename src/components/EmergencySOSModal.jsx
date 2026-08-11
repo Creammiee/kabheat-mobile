@@ -55,13 +55,13 @@ export default function EmergencySOSModal({ isOpen, onClose, currentPos, telemet
               00:0{countdown}
             </div>
 
-            {/* Simulated SOS Data Payload */}
+            {/* Emergency SOS Data Payload */}
             <div className="glass-panel rounded-2xl p-3 border border-red-500/30 text-left text-xs space-y-1 bg-black/40 mb-5">
               <div className="flex items-center gap-1.5 text-red-400 font-bold">
                 <MapPin size={14} /> Live GPS Coordinates:
               </div>
               <p className="text-white/80 font-mono text-[11px]">
-                {currentPos ? `${currentPos.lat.toFixed(5)}, ${currentPos.lng.toFixed(5)}` : "14.5995° N, 120.9842° E (Manila)"}
+                {currentPos ? `${currentPos.lat.toFixed(5)}, ${currentPos.lng.toFixed(5)}` : "Searching for GPS location..."}
               </p>
               <div className="flex items-center gap-1.5 text-amber-300 font-bold mt-2">
                 <ShieldAlert size={14} /> Vital Signs:

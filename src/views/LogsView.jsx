@@ -22,7 +22,6 @@ export default function LogsView({ logs, setOpenAddLogModal, tempUnit }) {
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <History className="text-[#FFDE96]" size={20} /> Heat Exposure Logs
           </h2>
-          <p className="text-xs text-[#F6FFEA]/60">Track past heat risk incidents & notes</p>
         </div>
 
         <button

@@ -28,21 +28,20 @@ export default function ProfileView({
   setAlertThreshold,
   emergencyContacts,
   setEmergencyContacts,
-  mlConfig,
-  setMlConfig,
   themeConfig,
   setThemeConfig,
+  openWeatherKey,
+  setOpenWeatherKey,
 }) {
-  const [testingEndpoint, setTestingEndpoint] = useState(false);
-  const [endpointStatus, setEndpointStatus] = useState(null);
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [newContact, setNewContact] = useState({ name: "", relation: "", phone: "" });
 
-  const handleTestEndpoint = () => {
-    setTestingEndpoint(true);
-    setEndpointStatus(null);
-    setTimeout(() => {
-      setTestingEndpoint(false);
-      setEndpointStatus("Connected (HTTP 200 OK - Latency 34ms)");
-    }, 1200);
+  const handleAddContact = () => {
+    if (newContact.name && newContact.phone) {
+      setEmergencyContacts((prev) => [...prev, newContact]);
+      setNewContact({ name: "", relation: "", phone: "" });
+      setShowAddContact(false);
+    }
   };
 
   return (
@@ -235,81 +234,7 @@ export default function ProfileView({
         </div>
       </div>
 
-      {/* AI MACHINE LEARNING MODEL CONFIGURATION PANEL */}
-      <div className="glass-panel rounded-3xl p-4 border border-[#FA855A]/30 space-y-3 bg-gradient-to-b from-white/5 to-transparent">
-        <div className="flex items-center justify-between border-b border-white/10 pb-2">
-          <h3 className="text-xs font-bold text-[#FA855A] uppercase tracking-wider flex items-center gap-1.5">
-            <Sparkles size={16} /> Machine Learning Model Settings
-          </h3>
-          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#FA855A]/20 text-[#FA855A]">
-            ML Engine v1.2
-          </span>
-        </div>
-
-        {/* Engine Mode Toggle */}
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-white block">Active Thermal Risk Engine</label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => setMlConfig((prev) => ({ ...prev, engineMode: "ai" }))}
-              className={`p-3 rounded-2xl border text-left transition-all ${
-                mlConfig?.engineMode === "ai"
-                  ? "border-[#FA855A] bg-[#FA855A]/20 text-white shadow-lg"
-                  : "border-white/10 bg-white/5 text-white/60"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold text-white">AI Strain Model</span>
-                {mlConfig?.engineMode === "ai" && <CheckCircle2 size={16} className="text-[#FA855A]" />}
-              </div>
-              <p className="text-[10px] text-white/70 mt-1">Multi-vector physiological & thermal prediction</p>
-            </button>
-
-            <button
-              onClick={() => setMlConfig((prev) => ({ ...prev, engineMode: "noaa" }))}
-              className={`p-3 rounded-2xl border text-left transition-all ${
-                mlConfig?.engineMode === "noaa"
-                  ? "border-amber-400 bg-amber-400/20 text-white shadow-lg"
-                  : "border-white/10 bg-white/5 text-white/60"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold text-white">NOAA Baseline</span>
-                {mlConfig?.engineMode === "noaa" && <CheckCircle2 size={16} className="text-amber-400" />}
-              </div>
-              <p className="text-[10px] text-white/70 mt-1">Standard heat index formula fallback</p>
-            </button>
-          </div>
-        </div>
-
-        {/* Cloud Model API Endpoint Config */}
-        <div className="bg-white/5 p-3 rounded-2xl space-y-2 border border-white/5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-white flex items-center gap-1">
-              <Globe size={14} className="text-[#62C4DA]" /> Remote Model Endpoint URL
-            </span>
-            <button
-              onClick={handleTestEndpoint}
-              disabled={testingEndpoint}
-              className="px-2 py-1 rounded-lg bg-[#62C4DA]/20 hover:bg-[#62C4DA]/30 text-[#62C4DA] text-[10px] font-bold flex items-center gap-1 transition-all"
-            >
-              {testingEndpoint ? <RefreshCw size={10} className="animate-spin" /> : "Test Ping"}
-            </button>
-          </div>
-
-          <input
-            type="text"
-            value={mlConfig?.modelEndpoint || ""}
-            onChange={(e) => setMlConfig((prev) => ({ ...prev, modelEndpoint: e.target.value }))}
-            placeholder="https://api.kabheat.io/v1/predict"
-            className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#62C4DA]"
-          />
-
-          {endpointStatus && (
-            <p className="text-[10px] text-emerald-400 font-medium">{endpointStatus}</p>
-          )}
-        </div>
-      </div>
+      {/* Removed AI MACHINE LEARNING MODEL CONFIGURATION PANEL */}
 
       {/* Temperature Unit Preference */}
       <div className="glass-panel rounded-3xl p-4 border border-white/10 space-y-3">
@@ -364,13 +289,37 @@ export default function ProfileView({
         </div>
       </div>
 
+      {/* External Integrations */}
+      <div className="glass-panel rounded-3xl p-4 border border-white/10 space-y-3">
+        <h3 className="text-xs font-bold text-[#62C4DA] uppercase tracking-wider flex items-center gap-1.5">
+          <Globe size={14} /> External Integrations
+        </h3>
+        
+        <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-2">
+          <div className="text-xs font-bold text-white flex justify-between">
+            <span>OpenWeatherMap API Key</span>
+            {openWeatherKey && <CheckCircle2 size={14} className="text-emerald-400" />}
+          </div>
+          <p className="text-[10px] text-[#F6FFEA]/60">
+            Provide an API key to fetch high-precision real-time environmental data. If left blank, the app uses a free, limited public fallback.
+          </p>
+          <input
+            type="text"
+            placeholder="e.g. 1a2b3c4d5e6f7g8h9i0j..."
+            value={openWeatherKey}
+            onChange={(e) => setOpenWeatherKey(e.target.value)}
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#62C4DA]"
+          />
+        </div>
+      </div>
+
       {/* Emergency Contacts List */}
       <div className="glass-panel rounded-3xl p-4 border border-white/10 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-bold text-[#FA855A] uppercase tracking-wider flex items-center gap-1.5">
             <Phone size={14} /> Emergency SOS Contacts
           </h3>
-          <span className="text-[10px] text-emerald-400 font-semibold">2 Active Contacts</span>
+          <span className="text-[10px] text-emerald-400 font-semibold">{emergencyContacts.length} Active Contacts</span>
         </div>
 
         <div className="space-y-2">
@@ -386,6 +335,53 @@ export default function ProfileView({
             </div>
           ))}
         </div>
+
+        {showAddContact ? (
+          <div className="bg-black/40 p-3 rounded-2xl border border-white/10 mt-3 space-y-2">
+            <input
+              type="text"
+              placeholder="Name (e.g. Jane Doe)"
+              value={newContact.name}
+              onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-[#FA855A]"
+            />
+            <input
+              type="text"
+              placeholder="Relation (e.g. Manager)"
+              value={newContact.relation}
+              onChange={(e) => setNewContact({ ...newContact, relation: e.target.value })}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-[#FA855A]"
+            />
+            <input
+              type="tel"
+              placeholder="Phone Number"
+              value={newContact.phone}
+              onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-[#FA855A]"
+            />
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={handleAddContact}
+                className="flex-1 py-1.5 bg-[#FA855A] text-white text-[11px] font-bold rounded-lg transition-all"
+              >
+                Save Contact
+              </button>
+              <button
+                onClick={() => setShowAddContact(false)}
+                className="flex-1 py-1.5 bg-white/10 text-white/70 text-[11px] font-bold rounded-lg transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowAddContact(true)}
+            className="w-full py-2 mt-2 rounded-xl bg-white/5 border border-white/10 border-dashed text-[#FA855A] text-xs font-bold hover:bg-white/10 transition-all"
+          >
+            + Add New Contact
+          </button>
+        )}
       </div>
 
       {/* Hardware Diagnostics */}

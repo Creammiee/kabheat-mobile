@@ -46,7 +46,6 @@ export default function HydrationTracker({ hydrationData, setHydrationData }) {
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Droplets className="text-[#62C4DA]" size={20} /> Hydration & Cooling
           </h2>
-          <p className="text-xs text-[#F6FFEA]/60">Stay hydrated to prevent heat stress</p>
         </div>
 
         <button
@@ -153,13 +152,6 @@ export default function HydrationTracker({ hydrationData, setHydrationData }) {
         </div>
       </div>
 
-      {/* Hydration Tips */}
-      <div className="glass-panel rounded-2xl p-3.5 border border-white/5 flex items-start gap-2.5 text-xs text-[#F6FFEA]/70">
-        <Award className="text-[#FFDE96] shrink-0 mt-0.5" size={16} />
-        <div>
-          <span className="font-semibold text-white">Heat Safety Rule:</span> Do not wait until you are thirsty. Drink 1 cup (250ml) of water every 15-20 minutes when working in extreme heat index conditions.
-        </div>
-      </div>
     </div>
   );
 }

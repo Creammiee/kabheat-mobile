@@ -5,6 +5,7 @@
 
 // Calculate Heat Index using Rothfusz regression equation (in Celsius)
 export function calculateHeatIndex(tempC, humidity) {
+  if (tempC === null || humidity === null || isNaN(tempC) || isNaN(humidity)) return null;
   // Convert Celsius to Fahrenheit for NOAA formula
   const T = (tempC * 9) / 5 + 32;
   const RH = humidity;
@@ -47,6 +48,20 @@ export function calculateHeatIndex(tempC, humidity) {
 
 // Risk Level Classification based on Heat Index (°C)
 export function getHeatRiskLevel(heatIndexC, bodyTempC = 37.0) {
+  if (heatIndexC === null || isNaN(heatIndexC)) {
+    return {
+      level: "UNKNOWN",
+      color: "#9ca3af",
+      bgColor: "rgba(156, 163, 175, 0.15)",
+      borderColor: "rgba(156, 163, 175, 0.4)",
+      title: "Waiting for Sensor Data",
+      description: "Connect IoT hardware to stream live thermal telemetry.",
+      advice: "Pair device to view risk classification.",
+      badge: "NO DATA",
+      icon: "activity",
+    };
+  }
+
   if (bodyTempC >= 39.5 || heatIndexC >= 48) {
     return {
       level: "CRITICAL",
@@ -104,6 +119,7 @@ export function getHeatRiskLevel(heatIndexC, bodyTempC = 37.0) {
 
 // Convert Temp
 export function formatTemp(tempC, unit = "celsius") {
+  if (tempC === null || tempC === undefined || isNaN(tempC)) return "--";
   if (unit === "fahrenheit") {
     const f = Math.round(((tempC * 9) / 5 + 32) * 10) / 10;
     return `${f}°F`;
@@ -112,38 +128,4 @@ export function formatTemp(tempC, unit = "celsius") {
 }
 
 // Initial Mock Logs
-export const INITIAL_HEAT_LOGS = [
-  {
-    id: "log-101",
-    location: "Construction Site - Zone A",
-    temperature: 38.5,
-    humidity: 75,
-    heatIndex: 46.2,
-    bodyTemp: 38.8,
-    status: "critical",
-    notes: "High solar radiation. Felt lightheaded after 1hr outdoor concrete pouring.",
-    timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
-  },
-  {
-    id: "log-102",
-    location: "Agricultural Field B",
-    temperature: 34.0,
-    humidity: 68,
-    heatIndex: 39.4,
-    bodyTemp: 37.6,
-    status: "warning",
-    notes: "Harvesting crops under direct sunlight. Drank 750ml electrolyte water.",
-    timestamp: new Date(Date.now() - 3600000 * 5).toISOString(),
-  },
-  {
-    id: "log-103",
-    location: "Warehouse Logistics Dock",
-    temperature: 31.2,
-    humidity: 60,
-    heatIndex: 33.8,
-    bodyTemp: 37.1,
-    status: "normal",
-    notes: "Ventilated indoor area. Normal hydration maintained.",
-    timestamp: new Date(Date.now() - 3600000 * 24).toISOString(),
-  },
-];
+export const INITIAL_HEAT_LOGS = [];

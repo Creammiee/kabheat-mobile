@@ -9,14 +9,22 @@ import IoTSensorModal from "./components/IoTSensorModal";
 import EmergencySOSModal from "./components/EmergencySOSModal";
 import AddLogModal from "./components/AddLogModal";
 import { calculateHeatIndex, getHeatRiskLevel, INITIAL_HEAT_LOGS } from "./utils/heatIndex";
-import { DEFAULT_ML_CONFIG, predictHeatStrain } from "./services/mlPredictor";
 import { applyTheme, DEFAULT_THEME_CONFIG } from "./utils/themeEngine";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const [tempUnit, setTempUnit] = useState("celsius");
   const [alertThreshold, setAlertThreshold] = useState(45);
-  const [bleConnected, setBleConnected] = useState(true);
+  const [bleConnected, setBleConnected] = useState(false);
+
+  // API Keys
+  const [openWeatherKey, setOpenWeatherKey] = useState(
+    localStorage.getItem("openWeatherKey") || ""
+  );
+
+  useEffect(() => {
+    localStorage.setItem("openWeatherKey", openWeatherKey);
+  }, [openWeatherKey]);
 
   // UI Customization State
   const [themeConfig, setThemeConfig] = useState(DEFAULT_THEME_CONFIG);
@@ -25,18 +33,17 @@ export default function App() {
     applyTheme(themeConfig);
   }, [themeConfig]);
 
-  // ML Config State
-  const [mlConfig, setMlConfig] = useState(DEFAULT_ML_CONFIG);
-
-  // Live Telemetry State (Enhanced with biometrics from PicoBioSensor hardware)
+  // Live Telemetry State (Enhanced with biometrics from IoT Hardware)
   const [telemetry, setTelemetry] = useState({
-    bodyTemp: 37.4,
-    ambientTemp: 34.5,
-    humidity: 70,
-    heartRate: 72,
-    spO2: 98,
-    gsr: 512,
+    bodyTemp: null,
+    ambientTemp: null,
+    humidity: null,
+    heartRate: null,
+    spO2: null,
+    gsr: null,
     activityLevel: "moderate", // 'sedentary' | 'light' | 'moderate' | 'heavy'
+    latitude: null,
+    longitude: null,
   });
 
   // Emergency SOS & Modals
@@ -46,71 +53,102 @@ export default function App() {
 
   // Hydration Data
   const [hydrationData, setHydrationData] = useState({
-    currentMl: 1250,
+    currentMl: 0,
     targetMl: 2500,
-    intakesCount: 3,
+    intakesCount: 0,
   });
 
   // Heat Logs List
   const [logs, setLogs] = useState(INITIAL_HEAT_LOGS);
 
   // Emergency Contacts
-  const [emergencyContacts, setEmergencyContacts] = useState([
-    { name: "Safety Officer Marcus", relation: "Supervisor", phone: "+63 917 555 0192" },
-    { name: "Maria Santos", relation: "Family / Emergency", phone: "+63 918 222 9104" },
-  ]);
+  const [emergencyContacts, setEmergencyContacts] = useState([]);
 
   // Real-time calculated heat index (Heuristic)
   const heatIndex = calculateHeatIndex(telemetry.ambientTemp, telemetry.humidity);
   const risk = getHeatRiskLevel(heatIndex, telemetry.bodyTemp);
 
-  // Real-time ML Prediction output
-  const mlPrediction = predictHeatStrain(telemetry, hydrationData, mlConfig);
-
-  // Periodic Telemetry Simulation (subtle sensor fluctuations)
+  // GPS Location Tracking (Device built-in GPS)
   useEffect(() => {
-    if (!bleConnected) return;
+    if (!("geolocation" in navigator)) {
+      console.warn("Geolocation is not supported by this browser.");
+      return;
+    }
 
-    const interval = setInterval(() => {
-      setTelemetry((prev) => {
-        const bodyDelta = (Math.random() - 0.5) * 0.05;
-        const ambientDelta = (Math.random() - 0.5) * 0.1;
-        const hrDelta = Math.round((Math.random() - 0.5) * 3);
-        const gsrDelta = Math.round((Math.random() - 0.5) * 8);
-        return {
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        setTelemetry((prev) => ({
           ...prev,
-          bodyTemp: Math.min(41.0, Math.max(36.0, Math.round((prev.bodyTemp + bodyDelta) * 10) / 10)),
-          ambientTemp: Math.min(48.0, Math.max(24.0, Math.round((prev.ambientTemp + ambientDelta) * 10) / 10)),
-          heartRate: Math.min(180, Math.max(50, prev.heartRate + hrDelta)),
-          gsr: Math.min(1024, Math.max(100, prev.gsr + gsrDelta)),
-        };
-      });
-    }, 4000);
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          satellites: "Device",
+        }));
+      },
+      (error) => {
+        console.warn("Error getting location: ", error.message);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0,
+      }
+    );
 
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
+  // Fetch real-time weather (Ambient Temp & Humidity) based on Location
+  useEffect(() => {
+    if (!telemetry.latitude || !telemetry.longitude) return;
+
+    const fetchWeather = async () => {
+      try {
+        let url = `https://api.open-meteo.com/v1/forecast?latitude=${telemetry.latitude}&longitude=${telemetry.longitude}&current=temperature_2m,relative_humidity_2m`;
+        
+        if (openWeatherKey) {
+          url = `https://api.openweathermap.org/data/2.5/weather?lat=${telemetry.latitude}&lon=${telemetry.longitude}&units=metric&appid=${openWeatherKey}`;
+        }
+
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (openWeatherKey && data && data.main) {
+          setTelemetry((prev) => ({
+            ...prev,
+            ambientTemp: data.main.temp,
+            humidity: data.main.humidity
+          }));
+        } else if (!openWeatherKey && data && data.current) {
+          setTelemetry((prev) => ({
+            ...prev,
+            ambientTemp: data.current.temperature_2m,
+            humidity: data.current.relative_humidity_2m
+          }));
+        }
+      } catch (err) {
+        console.warn("Failed to fetch location weather: ", err);
+      }
+    };
+
+    fetchWeather();
+    
+    // Refresh weather every 10 minutes
+    const interval = setInterval(fetchWeather, 10 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [bleConnected]);
-
-  // Trigger Overheat Alert Simulator
-  const triggerOverheatTest = () => {
-    setTelemetry({
-      bodyTemp: 39.8,
-      ambientTemp: 42.0,
-      humidity: 82,
-      heartRate: 145,
-      spO2: 91,
-      gsr: 850,
-      activityLevel: "heavy",
-    });
-    setOpenIoTPairing(false);
-    setOpenSOSModal(true);
-  };
+  }, [
+    // Coarse dependency: only re-fetch if location changes by ~11km (0.1 degrees)
+    telemetry.latitude ? telemetry.latitude.toFixed(1) : null,
+    telemetry.longitude ? telemetry.longitude.toFixed(1) : null,
+    openWeatherKey // re-fetch if they change the API key
+  ]);
 
   // Add Log Handler
   const handleAddLog = (newLog) => {
     setLogs((prev) => [newLog, ...prev]);
   };
 
-  const effectiveRiskLevel = mlConfig.engineMode === "noaa" ? risk.level : mlPrediction.riskLevel;
+  const effectiveRiskLevel = risk.level;
 
   return (
     <MobileShell
@@ -127,8 +165,6 @@ export default function App() {
           heatIndex={heatIndex}
           telemetry={telemetry}
           risk={risk}
-          mlPrediction={mlPrediction}
-          mlConfig={mlConfig}
           tempUnit={tempUnit}
           setActiveTab={setActiveTab}
           setOpenIoTPairing={setOpenIoTPairing}
@@ -145,8 +181,6 @@ export default function App() {
           tempUnit={tempUnit}
           bleConnected={bleConnected}
           setOpenIoTPairing={setOpenIoTPairing}
-          mlPrediction={mlPrediction}
-          mlConfig={mlConfig}
         />
       )}
 
@@ -173,10 +207,10 @@ export default function App() {
           setAlertThreshold={setAlertThreshold}
           emergencyContacts={emergencyContacts}
           setEmergencyContacts={setEmergencyContacts}
-          mlConfig={mlConfig}
-          setMlConfig={setMlConfig}
           themeConfig={themeConfig}
           setThemeConfig={setThemeConfig}
+          openWeatherKey={openWeatherKey}
+          setOpenWeatherKey={setOpenWeatherKey}
         />
       )}
 
@@ -188,13 +222,12 @@ export default function App() {
         setBleConnected={setBleConnected}
         telemetry={telemetry}
         setTelemetry={setTelemetry}
-        triggerOverheatTest={triggerOverheatTest}
       />
 
       <EmergencySOSModal
         isOpen={openSOSModal}
         onClose={() => setOpenSOSModal(false)}
-        currentPos={{ lat: 14.5995, lng: 120.9842 }}
+        currentPos={telemetry.latitude ? { lat: telemetry.latitude, lng: telemetry.longitude } : null}
         telemetry={telemetry}
       />
 
