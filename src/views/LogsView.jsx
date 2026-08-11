@@ -20,7 +20,7 @@ export default function LogsView({ logs, setOpenAddLogModal, tempUnit }) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <History className="text-[#FFDE96]" size={20} /> Heat Exposure Logs
+            <History className="text-[var(--soft-peach)]" size={20} /> Heat Exposure Logs
           </h2>
         </div>
 
@@ -35,13 +35,13 @@ export default function LogsView({ logs, setOpenAddLogModal, tempUnit }) {
       {/* Search & Filter Bar */}
       <div className="space-y-2">
         <div className="relative">
-          <Search size={16} className="absolute left-3.5 top-3 text-[#F6FFEA]/40" />
+          <Search size={16} className="absolute left-3.5 top-3 text-[var(--honeydew)]/40" />
           <input
             type="text"
             placeholder="Search location or symptom notes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-[#F6FFEA]/40 focus:outline-none focus:border-[#FA855A]"
+            className="w-full bg-white/5 border border-white/10 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-[var(--honeydew)]/40 focus:outline-none focus:border-[var(--coral-glow)]"
           />
         </div>
 
@@ -53,8 +53,8 @@ export default function LogsView({ logs, setOpenAddLogModal, tempUnit }) {
               onClick={() => setFilterStatus(st)}
               className={`px-3 py-1 rounded-full text-xs font-bold capitalize transition-all ${
                 filterStatus === st
-                  ? "bg-[#FA855A] text-white shadow-md"
-                  : "bg-white/5 text-[#F6FFEA]/60 border border-white/10 hover:bg-white/10"
+                  ? "bg-[var(--coral-glow)] text-white shadow-md"
+                  : "bg-white/5 text-[var(--honeydew)]/60 border border-white/10 hover:bg-white/10"
               }`}
             >
               {st}
@@ -66,14 +66,14 @@ export default function LogsView({ logs, setOpenAddLogModal, tempUnit }) {
       {/* Log Entries List */}
       <div className="space-y-3">
         {filteredLogs.length === 0 ? (
-          <div className="glass-panel rounded-3xl p-8 text-center text-xs text-[#F6FFEA]/50">
+          <div className="glass-panel rounded-3xl p-8 text-center text-xs text-[var(--honeydew)]/50">
             No heat logs found matching your criteria.
           </div>
         ) : (
           filteredLogs.map((log) => {
             const isCritical = log.status === "critical";
             const isWarning = log.status === "warning";
-            const badgeColor = isCritical ? "#C93638" : isWarning ? "#FA855A" : "#22c55e";
+            const badgeColor = isCritical ? "var(--tomato-jam)" : isWarning ? "var(--coral-glow)" : "#22c55e";
 
             return (
               <div
@@ -82,7 +82,7 @@ export default function LogsView({ logs, setOpenAddLogModal, tempUnit }) {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <MapPin size={14} className="text-[#FA855A]" /> {log.location}
+                    <MapPin size={14} className="text-[var(--coral-glow)]" /> {log.location}
                   </span>
 
                   <span
@@ -93,13 +93,13 @@ export default function LogsView({ logs, setOpenAddLogModal, tempUnit }) {
                   </span>
                 </div>
 
-                <p className="text-xs text-[#F6FFEA]/80 leading-relaxed bg-white/5 p-2.5 rounded-xl border border-white/5">
+                <p className="text-xs text-[var(--honeydew)]/80 leading-relaxed bg-white/5 p-2.5 rounded-xl border border-white/5">
                   "{log.notes}"
                 </p>
 
-                <div className="flex items-center justify-between text-[11px] pt-1 text-[#F6FFEA]/60 border-t border-white/5">
+                <div className="flex items-center justify-between text-[11px] pt-1 text-[var(--honeydew)]/60 border-t border-white/5">
                   <span className="flex items-center gap-1">
-                    <Thermometer size={12} className="text-[#FFDE96]" />
+                    <Thermometer size={12} className="text-[var(--soft-peach)]" />
                     Index: <strong className="text-white">{formatTemp(log.heatIndex, tempUnit)}</strong>
                   </span>
 
@@ -116,3 +116,4 @@ export default function LogsView({ logs, setOpenAddLogModal, tempUnit }) {
     </div>
   );
 }
+

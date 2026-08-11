@@ -10,6 +10,7 @@ import EmergencySOSModal from "./components/EmergencySOSModal";
 import AddLogModal from "./components/AddLogModal";
 import { calculateHeatIndex, getHeatRiskLevel, INITIAL_HEAT_LOGS } from "./utils/heatIndex";
 import { applyTheme, DEFAULT_THEME_CONFIG } from "./utils/themeEngine";
+import { saveHeatLogToCloud, fetchRecentHeatLogs } from "./services/firebaseService";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("home");
@@ -144,9 +145,27 @@ export default function App() {
   ]);
 
   // Add Log Handler
-  const handleAddLog = (newLog) => {
+  const handleAddLog = async (newLog) => {
     setLogs((prev) => [newLog, ...prev]);
+    
+    // Sync to cloud (Firebase offline persistence handles queuing automatically if offline)
+    try {
+      await saveHeatLogToCloud(newLog);
+    } catch (err) {
+      console.warn("Firebase sync deferred or failed", err);
+    }
   };
+
+  // Load existing logs from Firestore on app startup
+  useEffect(() => {
+    const loadCloudLogs = async () => {
+      const cloudLogs = await fetchRecentHeatLogs();
+      if (cloudLogs && cloudLogs.length > 0) {
+        setLogs(cloudLogs);
+      }
+    };
+    loadCloudLogs();
+  }, []);
 
   const effectiveRiskLevel = risk.level;
 
@@ -241,4 +260,5 @@ export default function App() {
     </MobileShell>
   );
 }
+
 

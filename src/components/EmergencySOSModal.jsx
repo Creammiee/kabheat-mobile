@@ -1,10 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { AlertOctagon, PhoneCall, Send, X, MapPin, ShieldAlert, CheckCircle } from "lucide-react";
+import { broadcastSOSAlert } from "../services/firebaseService";
 
 export default function EmergencySOSModal({ isOpen, onClose, currentPos, telemetry }) {
   const [countdown, setCountdown] = useState(5);
   const [sosSent, setSosSent] = useState(false);
   const [cancelled, setCancelled] = useState(false);
+
+  const handleSosSend = useCallback(async () => {
+    setSosSent(true);
+    try {
+      await broadcastSOSAlert({
+        location: currentPos,
+        telemetry: telemetry,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err) {
+      console.warn("Firebase SOS broadcast deferred or failed", err);
+    }
+  }, [currentPos, telemetry]);
 
   useEffect(() => {
     let timer = null;
@@ -13,11 +27,11 @@ export default function EmergencySOSModal({ isOpen, onClose, currentPos, telemet
         setCountdown((prev) => prev - 1);
       }, 1000);
     } else if (isOpen && countdown === 0 && !cancelled) {
-      setSosSent(true);
+      handleSosSend();
     }
 
     return () => clearInterval(timer);
-  }, [isOpen, countdown, sosSent, cancelled]);
+  }, [isOpen, countdown, sosSent, cancelled, handleSosSend]);
 
   if (!isOpen) return null;
 
@@ -73,7 +87,7 @@ export default function EmergencySOSModal({ isOpen, onClose, currentPos, telemet
 
             <div className="space-y-2">
               <button
-                onClick={() => setSosSent(true)}
+                onClick={handleSosSend}
                 className="w-full py-3 rounded-2xl bg-red-600 hover:bg-red-500 text-white font-black text-sm uppercase tracking-wider shadow-lg transition-all flex items-center justify-center gap-2"
               >
                 <Send size={16} /> Broadcast SOS Now
@@ -121,3 +135,4 @@ export default function EmergencySOSModal({ isOpen, onClose, currentPos, telemet
     </div>
   );
 }
+

@@ -23,16 +23,16 @@ export default function LiveTelemetryView({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Activity className="text-[#FA855A]" size={20} /> Live IoT Telemetry
+            <Activity className="text-[var(--coral-glow)]" size={20} /> Live IoT Telemetry
           </h2>
         </div>
 
       </div>
 
       {/* Exertion / Activity Level Selector (Modifies ML Feature Vector) */}
-      <div className="glass-panel rounded-3xl p-4 border border-[#FA855A]/30 space-y-2">
+      <div className="glass-panel rounded-3xl p-4 border border-[var(--coral-glow)]/30 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-[#FA855A] flex items-center gap-1">
+          <span className="text-xs font-bold text-[var(--coral-glow)] flex items-center gap-1">
             <Dumbbell size={14} /> Physical Workload Exertion
           </span>
         </div>
@@ -52,7 +52,7 @@ export default function LiveTelemetryView({
                 }
                 className={`py-2 px-1 rounded-xl text-center border transition-all ${
                   isSelected
-                    ? "border-[#FA855A] bg-[#FA855A]/25 text-white font-extrabold shadow-md"
+                    ? "border-[var(--coral-glow)] bg-[var(--coral-glow)]/25 text-white font-extrabold shadow-md"
                     : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
                 }`}
               >
@@ -67,10 +67,10 @@ export default function LiveTelemetryView({
       {/* Hardware Vital Stat Grid */}
       <div className="grid grid-cols-2 gap-3">
         {/* Skin Temperature */}
-        <div className="glass-panel rounded-3xl p-4 border border-[#FA855A]/30 relative overflow-hidden">
+        <div className="glass-panel rounded-3xl p-4 border border-[var(--coral-glow)]/30 relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-[#FA855A] uppercase tracking-wider">Skin Temp</span>
-            <div className="p-1.5 rounded-xl bg-[#FA855A]/20 text-[#FA855A]">
+            <span className="text-[11px] font-semibold text-[var(--coral-glow)] uppercase tracking-wider">Skin Temp</span>
+            <div className="p-1.5 rounded-xl bg-[var(--coral-glow)]/20 text-[var(--coral-glow)]">
               <Thermometer size={16} />
             </div>
           </div>
@@ -78,11 +78,11 @@ export default function LiveTelemetryView({
             <span className="text-3xl font-extrabold text-white">
               {formatTemp(telemetry.bodyTemp, tempUnit).replace(/°[CF]/, "")}
             </span>
-            <span className="text-xs text-[#FA855A] font-bold">
+            <span className="text-xs text-[var(--coral-glow)] font-bold">
               {tempUnit === "celsius" ? "°C" : "°F"}
             </span>
           </div>
-          <p className="text-[10px] text-[#F6FFEA]/50 mt-1">
+          <p className="text-[10px] text-[var(--honeydew)]/50 mt-1">
             {telemetry.bodyTemp >= 38.5 ? "Hyperthermia Alert" : "Normal Skin Temp"}
           </p>
         </div>
@@ -99,41 +99,41 @@ export default function LiveTelemetryView({
             <span className="text-3xl font-extrabold text-white">{telemetry.heartRate ?? "--"}</span>
             <span className="text-xs text-red-400 font-bold">BPM</span>
           </div>
-          <p className="text-[10px] text-[#F6FFEA]/50 mt-1">
+          <p className="text-[10px] text-[var(--honeydew)]/50 mt-1">
             {telemetry.heartRate ? (telemetry.heartRate > 110 ? "High Cardiac Strain" : "Normal Pulse") : "No Data"}
           </p>
         </div>
 
         {/* SpO2 */}
-        <div className="glass-panel rounded-3xl p-4 border border-[#62C4DA]/30 relative overflow-hidden">
+        <div className="glass-panel rounded-3xl p-4 border border-[var(--sky-blue)]/30 relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-[#62C4DA] uppercase tracking-wider">SpO2 Oxygen</span>
-            <div className="p-1.5 rounded-xl bg-[#62C4DA]/20 text-[#62C4DA]">
+            <span className="text-[11px] font-semibold text-[var(--sky-blue)] uppercase tracking-wider">SpO2 Oxygen</span>
+            <div className="p-1.5 rounded-xl bg-[var(--sky-blue)]/20 text-[var(--sky-blue)]">
               <Zap size={16} />
             </div>
           </div>
           <div className="flex items-baseline gap-1.5 mt-2">
             <span className="text-3xl font-extrabold text-white">{telemetry.spO2 ?? "--"}</span>
-            <span className="text-xs text-[#62C4DA] font-bold">%</span>
+            <span className="text-xs text-[var(--sky-blue)] font-bold">%</span>
           </div>
-          <p className="text-[10px] text-[#F6FFEA]/50 mt-1">
+          <p className="text-[10px] text-[var(--honeydew)]/50 mt-1">
             {telemetry.spO2 ? (telemetry.spO2 < 95 ? "Hypoxia Risk Warning" : "Optimal Oxygenation") : "No Data"}
           </p>
         </div>
 
         {/* GSR Sweat Conductance */}
-        <div className="glass-panel rounded-3xl p-4 border border-[#FFDE96]/30 relative overflow-hidden">
+        <div className="glass-panel rounded-3xl p-4 border border-[var(--soft-peach)]/30 relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-[#FFDE96] uppercase tracking-wider">GSR Sweat</span>
-            <div className="p-1.5 rounded-xl bg-[#FFDE96]/20 text-[#FFDE96]">
+            <span className="text-[11px] font-semibold text-[var(--soft-peach)] uppercase tracking-wider">GSR Sweat</span>
+            <div className="p-1.5 rounded-xl bg-[var(--soft-peach)]/20 text-[var(--soft-peach)]">
               <Wind size={16} />
             </div>
           </div>
           <div className="flex items-baseline gap-1.5 mt-2">
             <span className="text-3xl font-extrabold text-white">{telemetry.gsr ?? "--"}</span>
-            <span className="text-xs text-[#FFDE96] font-bold">ADC</span>
+            <span className="text-xs text-[var(--soft-peach)] font-bold">ADC</span>
           </div>
-          <p className="text-[10px] text-[#F6FFEA]/50 mt-1">
+          <p className="text-[10px] text-[var(--honeydew)]/50 mt-1">
             {telemetry.gsr ? (telemetry.gsr > 700 ? "Heavy Sweating / Loss" : "Normal Conductance") : "No Data"}
           </p>
         </div>
@@ -151,7 +151,7 @@ export default function LiveTelemetryView({
               {telemetry.latitude ? `${telemetry.latitude.toFixed(4)}°, ${telemetry.longitude.toFixed(4)}°` : "Searching..."}
             </span>
           </div>
-          <p className="text-[10px] text-[#F6FFEA]/50 mt-1 flex items-center gap-2">
+          <p className="text-[10px] text-[var(--honeydew)]/50 mt-1 flex items-center gap-2">
             <span>Source: <strong className="text-indigo-400">{telemetry.satellites ?? "None"}</strong></span>
             <span>•</span>
             <span>Accuracy: <strong className="text-indigo-400">{telemetry.accuracy ? telemetry.accuracy.toFixed(1) + "m" : "--"}</strong></span>
@@ -162,3 +162,4 @@ export default function LiveTelemetryView({
     </div>
   );
 }
+

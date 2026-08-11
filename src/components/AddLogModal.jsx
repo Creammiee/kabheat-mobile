@@ -30,10 +30,10 @@ export default function AddLogModal({ isOpen, onClose, onAddLog, currentHeatInde
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="w-full max-w-sm glass-panel rounded-3xl p-5 border border-white/15 bg-[#120E1C] shadow-2xl relative">
+      <div className="w-full max-w-sm glass-panel rounded-3xl p-5 border border-white/15 bg-[var(--bg-dark)] shadow-2xl relative">
         <div className="flex items-center justify-between pb-3 border-b border-white/10">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <Plus size={16} className="text-[#FA855A]" /> Record Heat Exposure Log
+            <Plus size={16} className="text-[var(--coral-glow)]" /> Record Heat Exposure Log
           </h3>
           <button onClick={onClose} className="p-1 rounded-full text-white/60 hover:bg-white/10">
             <X size={18} />
@@ -42,23 +42,23 @@ export default function AddLogModal({ isOpen, onClose, onAddLog, currentHeatInde
 
         <form onSubmit={handleSubmit} className="space-y-3 mt-3">
           <div>
-            <label className="text-[11px] font-semibold text-[#F6FFEA]/70 block mb-1">
+            <label className="text-[11px] font-semibold text-[var(--honeydew)]/70 block mb-1">
               Work Location
             </label>
             <div className="relative">
-              <MapPin size={14} className="absolute left-3 top-3 text-[#FA855A]" />
+              <MapPin size={14} className="absolute left-3 top-3 text-[var(--coral-glow)]" />
               <input
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-[#FA855A]"
+                className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-[var(--coral-glow)]"
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="text-[11px] font-semibold text-[#F6FFEA]/70 block mb-1">
+            <label className="text-[11px] font-semibold text-[var(--honeydew)]/70 block mb-1">
               Observed Symptom / Work Notes
             </label>
             <textarea
@@ -66,13 +66,13 @@ export default function AddLogModal({ isOpen, onClose, onAddLog, currentHeatInde
               placeholder="e.g. Mild sweating, felt slight dizziness after 45 mins in direct sun..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white placeholder-[#F6FFEA]/40 focus:outline-none focus:border-[#FA855A]"
+              className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white placeholder-[var(--honeydew)]/40 focus:outline-none focus:border-[var(--coral-glow)]"
               required
             />
           </div>
 
           <div>
-            <label className="text-[11px] font-semibold text-[#F6FFEA]/70 block mb-1">
+            <label className="text-[11px] font-semibold text-[var(--honeydew)]/70 block mb-1">
               Felt Thermal Stress Level
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -106,3 +106,4 @@ export default function AddLogModal({ isOpen, onClose, onAddLog, currentHeatInde
     </div>
   );
 }
+

@@ -53,7 +53,7 @@ export default function HomeView({
               {activeRisk.badge || activeRisk.level}
             </span>
             <span className="text-[11px] text-white/70 font-medium flex items-center gap-1">
-              <Cpu size={12} className="text-[#62C4DA]" />
+              <Cpu size={12} className="text-[var(--sky-blue)]" />
               Standard Heat Index Model
             </span>
           </div>
@@ -74,7 +74,7 @@ export default function HomeView({
         </p>
 
         <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between text-[11px]">
-          <span className="text-[#FFDE96] font-medium flex items-center gap-1">
+          <span className="text-[var(--soft-peach)] font-medium flex items-center gap-1">
             <ShieldCheck size={14} /> {activeRisk.advice}
           </span>
         </div>
@@ -98,29 +98,29 @@ export default function HomeView({
           onClick={() => setOpenAddLogModal(true)}
           className="p-3 rounded-2xl glass-card-interactive glass-panel border border-white/10 flex flex-col items-center justify-center text-center gap-1"
         >
-          <div className="p-2 rounded-xl bg-[#FA855A]/20 text-[#FA855A]">
+          <div className="p-2 rounded-xl bg-[var(--coral-glow)]/20 text-[var(--coral-glow)]">
             <Plus size={18} />
           </div>
           <span className="text-xs font-bold text-white mt-1">Log Heat</span>
-          <span className="text-[9px] text-[#F6FFEA]/50">Record symptom</span>
+          <span className="text-[9px] text-[var(--honeydew)]/50">Record symptom</span>
         </button>
 
         <button
           onClick={() => setActiveTab("hydration")}
           className="p-3 rounded-2xl glass-card-interactive glass-panel border border-white/10 flex flex-col items-center justify-center text-center gap-1"
         >
-          <div className="p-2 rounded-xl bg-[#62C4DA]/20 text-[#62C4DA]">
+          <div className="p-2 rounded-xl bg-[var(--sky-blue)]/20 text-[var(--sky-blue)]">
             <Droplets size={18} />
           </div>
           <span className="text-xs font-bold text-white mt-1">Hydrate</span>
-          <span className="text-[9px] text-[#62C4DA]">{hydrationData.currentMl} / 2500 ml</span>
+          <span className="text-[9px] text-[var(--sky-blue)]">{hydrationData.currentMl} / 2500 ml</span>
         </button>
 
         <button
           onClick={() => setOpenIoTPairing(true)}
           className="p-3 rounded-2xl glass-card-interactive glass-panel border border-white/10 flex flex-col items-center justify-center text-center gap-1"
         >
-          <div className="p-2 rounded-xl bg-[#FFDE96]/20 text-[#FFDE96]">
+          <div className="p-2 rounded-xl bg-[var(--soft-peach)]/20 text-[var(--soft-peach)]">
             <Zap size={18} />
           </div>
           <span className="text-xs font-bold text-white mt-1">IoT Sensor</span>
@@ -132,39 +132,39 @@ export default function HomeView({
       <div className="glass-panel rounded-3xl p-4 border border-white/10 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <MapPin size={16} className="text-[#FA855A]" />
+            <MapPin size={16} className="text-[var(--coral-glow)]" />
             <span className="text-xs font-bold text-white">Outdoor Location</span>
           </div>
-          <span className="text-[10px] text-[#F6FFEA]/50">Live Weather Radar</span>
+          <span className="text-[10px] text-[var(--honeydew)]/50">Live Weather Radar</span>
         </div>
 
         <div className="flex items-center justify-between bg-white/5 p-3 rounded-2xl border border-white/5">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-[#FA855A]/15 text-[#FA855A]">
+            <div className="p-2.5 rounded-xl bg-[var(--coral-glow)]/15 text-[var(--coral-glow)]">
               <Thermometer size={24} />
             </div>
             <div>
               <div className="text-base font-extrabold text-white">
                 {telemetry.ambientTemp ? formatTemp(telemetry.ambientTemp, tempUnit) : "--"}
               </div>
-              <p className="text-[10px] text-[#F6FFEA]/60">Ambient Temperature</p>
+              <p className="text-[10px] text-[var(--honeydew)]/60">Ambient Temperature</p>
             </div>
           </div>
 
           <div className="text-right">
-            <div className="text-xs font-bold text-[#62C4DA] flex items-center justify-end gap-1">
+            <div className="text-xs font-bold text-[var(--sky-blue)] flex items-center justify-end gap-1">
               <Wind size={12} /> -- km/h
             </div>
-            <p className="text-[10px] text-[#FFDE96] mt-0.5">UV Index: --</p>
+            <p className="text-[10px] text-[var(--soft-peach)] mt-0.5">UV Index: --</p>
           </div>
         </div>
 
         <button
           onClick={() => setActiveTab("telemetry")}
-          className="w-full py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-[#F6FFEA]/80 flex items-center justify-between transition-all"
+          className="w-full py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-[var(--honeydew)]/80 flex items-center justify-between transition-all"
         >
           <span className="flex items-center gap-1.5">
-            <Activity size={14} className="text-[#FA855A]" /> View Live Sensor Stream
+            <Activity size={14} className="text-[var(--coral-glow)]" /> View Live Sensor Stream
           </span>
           <ChevronRight size={14} />
         </button>
@@ -172,3 +172,4 @@ export default function HomeView({
     </div>
   );
 }
+

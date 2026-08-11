@@ -168,3 +168,4 @@ class BLEHardwareManager {
 }
 
 export const bleHardwareManager = new BLEHardwareManager();
+

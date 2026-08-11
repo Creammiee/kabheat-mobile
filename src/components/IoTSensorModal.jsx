@@ -64,16 +64,16 @@ export default function IoTSensorModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="w-full max-w-sm glass-panel rounded-3xl p-5 border border-white/15 bg-[#120E1C] shadow-2xl relative max-h-[90vh] overflow-y-auto no-scrollbar">
+      <div className="w-full max-w-sm glass-panel rounded-3xl p-5 border border-white/15 bg-[var(--bg-dark)] shadow-2xl relative max-h-[90vh] overflow-y-auto no-scrollbar">
         {/* Modal Header */}
         <div className="flex items-center justify-between pb-3 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-[#62C4DA]/20 text-[#62C4DA]">
+            <div className="p-2 rounded-xl bg-[var(--sky-blue)]/20 text-[var(--sky-blue)]">
               <Bluetooth size={18} />
             </div>
             <div>
               <h3 className="text-sm font-bold text-white">IoT Sensor Pairing</h3>
-              <p className="text-[10px] text-[#F6FFEA]/60">Manage hardware connection</p>
+              <p className="text-[10px] text-[var(--honeydew)]/60">Manage hardware connection</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-white/10 text-white/70">
@@ -85,7 +85,7 @@ export default function IoTSensorModal({
         <div className="grid grid-cols-1 gap-1 my-3 p-1 bg-black/40 rounded-xl border border-white/10 text-[10px] font-bold">
           <button
             onClick={() => setConnectionType("ble")}
-            className={`py-1.5 rounded-lg flex items-center justify-center gap-1 transition-all bg-[#62C4DA] text-white shadow`}
+            className={`py-1.5 rounded-lg flex items-center justify-center gap-1 transition-all bg-[var(--sky-blue)] text-white shadow`}
           >
             <Bluetooth size={12} /> Bluetooth 5.2
           </button>
@@ -118,7 +118,7 @@ export default function IoTSensorModal({
               ? hardwareInfo?.deviceName || "Device Connected"
               : `No ${connectionType.toUpperCase()} Device Paired`}
           </h4>
-          <p className="text-[10px] text-[#F6FFEA]/60 mt-0.5 max-w-[230px]">
+          <p className="text-[10px] text-[var(--honeydew)]/60 mt-0.5 max-w-[230px]">
             {bleConnected
               ? `Receiving live sensor stream over Bluetooth.`
               : "Scan for nearby compatible IoT sensors via Bluetooth."}
@@ -166,7 +166,7 @@ export default function IoTSensorModal({
         {bleConnected && (
           <div className="bg-black/60 rounded-2xl p-3 border border-white/10 space-y-2 mb-3">
             <div className="flex items-center justify-between text-[10px]">
-              <span className="text-[#62C4DA] font-bold flex items-center gap-1">
+              <span className="text-[var(--sky-blue)] font-bold flex items-center gap-1">
                 <Terminal size={12} /> Live Data Stream
               </span>
               <span className="text-emerald-400 font-mono">1 Hz</span>
@@ -181,3 +181,4 @@ export default function IoTSensorModal({
     </div>
   );
 }
+

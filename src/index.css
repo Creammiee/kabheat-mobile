@@ -3,11 +3,11 @@
 @layer base {
   :root {
     /* KabHeat Customizable Theme Variables */
-    --honeydew: #F6FFEA;
-    --soft-peach: #FFDE96;
-    --coral-glow: #FA855A;
-    --tomato-jam: #C93638;
-    --sky-blue: #62C4DA;
+    --honeydew: var(--honeydew);
+    --soft-peach: var(--soft-peach);
+    --coral-glow: var(--coral-glow);
+    --tomato-jam: var(--tomato-jam);
+    --sky-blue: var(--sky-blue);
 
     --bg-dark: #0C0A14;
     --card-bg: rgba(255, 255, 255, 0.05);
@@ -18,13 +18,13 @@
     --color-safe: #22c55e;
     --color-caution: #eab308;
     --color-warning: #f97316;
-    --color-danger: #C93638;
+    --color-danger: var(--tomato-jam);
   }
 
   body {
     font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background-color: var(--bg-dark, #07050E);
-    color: var(--honeydew, #F6FFEA);
+    background-color: var(--bg-dark, var(--bg-dark));
+    color: var(--honeydew, var(--honeydew));
     overflow-x: hidden;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
@@ -41,10 +41,10 @@
 }
 
 .glass-panel-warm {
-  background: linear-gradient(135deg, rgba(250, 133, 90, 0.08) 0%, rgba(201, 54, 56, 0.04) 100%);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--coral-glow) 8%, transparent) 0%, color-mix(in srgb, var(--tomato-jam) 4%, transparent) 100%);
   backdrop-filter: blur(var(--glass-blur, 16px));
   -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
-  border: 1px solid rgba(250, 133, 90, 0.18);
+  border: 1px solid color-mix(in srgb, var(--coral-glow) 18%, transparent);
 }
 
 .glass-card-interactive {
@@ -57,19 +57,19 @@
 
 /* Custom Gradients */
 .text-gradient-sunset {
-  background: linear-gradient(135deg, #F6FFEA 0%, #FFDE96 30%, #FA855A 65%, #C93638 100%);
+  background: linear-gradient(135deg, var(--honeydew) 0%, var(--soft-peach) 30%, var(--coral-glow) 65%, var(--tomato-jam) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .text-gradient-heat {
-  background: linear-gradient(135deg, #FFDE96 0%, #FA855A 50%, #C93638 100%);
+  background: linear-gradient(135deg, var(--soft-peach) 0%, var(--coral-glow) 50%, var(--tomato-jam) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .bg-gradient-sunset {
-  background: linear-gradient(135deg, #FA855A 0%, #C93638 100%);
+  background: linear-gradient(135deg, var(--coral-glow) 0%, var(--tomato-jam) 100%);
 }
 
 .bg-gradient-safe {
@@ -87,10 +87,10 @@
 /* Glowing animations */
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 15px rgba(250, 133, 90, 0.3), inset 0 0 15px rgba(250, 133, 90, 0.1);
+    box-shadow: 0 0 15px color-mix(in srgb, var(--coral-glow) 30%, transparent), inset 0 0 15px color-mix(in srgb, var(--coral-glow) 10%, transparent);
   }
   50% {
-    box-shadow: 0 0 30px rgba(201, 54, 56, 0.6), inset 0 0 25px rgba(201, 54, 56, 0.25);
+    box-shadow: 0 0 30px color-mix(in srgb, var(--tomato-jam) 60%, transparent), inset 0 0 25px color-mix(in srgb, var(--tomato-jam) 25%, transparent);
   }
 }
 
@@ -100,7 +100,7 @@
 
 @keyframes pulse-critical {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(201, 54, 56, 0.8), 0 0 40px rgba(201, 54, 56, 0.4);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--tomato-jam) 80%, transparent), 0 0 40px color-mix(in srgb, var(--tomato-jam) 40%, transparent);
   }
   50% {
     box-shadow: 0 0 40px rgba(239, 68, 68, 1), 0 0 80px rgba(239, 68, 68, 0.6);
@@ -119,3 +119,5 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+

@@ -65,9 +65,9 @@ export function getHeatRiskLevel(heatIndexC, bodyTempC = 37.0) {
   if (bodyTempC >= 39.5 || heatIndexC >= 48) {
     return {
       level: "CRITICAL",
-      color: "#C93638",
-      bgColor: "rgba(201, 54, 56, 0.2)",
-      borderColor: "rgba(201, 54, 56, 0.6)",
+      color: "var(--tomato-jam)",
+      bgColor: "color-mix(in srgb, var(--tomato-jam) 20%, transparent)",
+      borderColor: "color-mix(in srgb, var(--tomato-jam) 60%, transparent)",
       title: "Heat Stroke Risk (Critical)",
       description: "Immediate danger of heat stroke! Seek shade, hydrate, and stop physical activity immediately.",
       advice: "Apply cool packs, seek air conditioning or medical assistance.",
@@ -79,9 +79,9 @@ export function getHeatRiskLevel(heatIndexC, bodyTempC = 37.0) {
   if (bodyTempC >= 38.5 || heatIndexC >= 41) {
     return {
       level: "DANGER",
-      color: "#FA855A",
-      bgColor: "rgba(250, 133, 90, 0.18)",
-      borderColor: "rgba(250, 133, 90, 0.5)",
+      color: "var(--coral-glow)",
+      bgColor: "color-mix(in srgb, var(--coral-glow) 18%, transparent)",
+      borderColor: "color-mix(in srgb, var(--coral-glow) 50%, transparent)",
       title: "Extreme Caution / High Heat",
       description: "Heat exhaustion likely with prolonged exposure or physical exertion.",
       advice: "Take a 15-minute rest break in a shaded area every 45 minutes.",
@@ -93,9 +93,9 @@ export function getHeatRiskLevel(heatIndexC, bodyTempC = 37.0) {
   if (bodyTempC >= 37.8 || heatIndexC >= 33) {
     return {
       level: "WARNING",
-      color: "#FFDE96",
-      bgColor: "rgba(255, 222, 150, 0.15)",
-      borderColor: "rgba(255, 222, 150, 0.4)",
+      color: "var(--soft-peach)",
+      bgColor: "color-mix(in srgb, var(--soft-peach) 15%, transparent)",
+      borderColor: "color-mix(in srgb, var(--soft-peach) 40%, transparent)",
       title: "Moderate Thermal Strain",
       description: "Fatigue possible with prolonged exposure. Stay regularly hydrated.",
       advice: "Drink at least 250ml of water every 20-30 minutes.",
@@ -129,3 +129,4 @@ export function formatTemp(tempC, unit = "celsius") {
 
 // Initial Mock Logs
 export const INITIAL_HEAT_LOGS = [];
+

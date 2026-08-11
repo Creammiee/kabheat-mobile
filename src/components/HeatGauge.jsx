@@ -55,7 +55,7 @@ export default function HeatGauge({ heatIndex, bodyTemp, ambientTemp, humidity, 
 
         {/* Inner Content Display */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-          <span className="text-xs uppercase tracking-wider text-[#F6FFEA]/60 font-semibold mb-1">
+          <span className="text-xs uppercase tracking-wider text-[var(--honeydew)]/60 font-semibold mb-1">
             Heat Index (°HI)
           </span>
 
@@ -63,7 +63,7 @@ export default function HeatGauge({ heatIndex, bodyTemp, ambientTemp, humidity, 
             <span className="text-5xl font-extrabold tracking-tight text-white drop-shadow-md">
               {formatTemp(heatIndex, tempUnit).replace(/°[CF]/, '')}
             </span>
-            <span className="text-xl font-bold text-[#FFDE96] ml-1">
+            <span className="text-xl font-bold text-[var(--soft-peach)] ml-1">
               {tempUnit === "celsius" ? "°C" : "°F"}
             </span>
           </div>
@@ -88,7 +88,7 @@ export default function HeatGauge({ heatIndex, bodyTemp, ambientTemp, humidity, 
       {/* Sensor Quick Stats Grid */}
       <div className="w-full grid grid-cols-3 gap-2 mt-4 px-2">
         <div className="glass-panel rounded-xl p-2.5 text-center flex flex-col items-center">
-          <span className="text-[10px] uppercase text-[#F6FFEA]/60 font-medium">Body Temp</span>
+          <span className="text-[10px] uppercase text-[var(--honeydew)]/60 font-medium">Body Temp</span>
           <span className="text-base font-bold text-white mt-0.5">
             {formatTemp(bodyTemp, tempUnit)}
           </span>
@@ -98,21 +98,22 @@ export default function HeatGauge({ heatIndex, bodyTemp, ambientTemp, humidity, 
         </div>
 
         <div className="glass-panel rounded-xl p-2.5 text-center flex flex-col items-center">
-          <span className="text-[10px] uppercase text-[#F6FFEA]/60 font-medium">Ambient</span>
-          <span className="text-base font-bold text-[#FFDE96] mt-0.5">
+          <span className="text-[10px] uppercase text-[var(--honeydew)]/60 font-medium">Ambient</span>
+          <span className="text-base font-bold text-[var(--soft-peach)] mt-0.5">
             {formatTemp(ambientTemp, tempUnit)}
           </span>
-          <span className="text-[10px] text-[#F6FFEA]/50 mt-0.5">Air Temp</span>
+          <span className="text-[10px] text-[var(--honeydew)]/50 mt-0.5">Air Temp</span>
         </div>
 
         <div className="glass-panel rounded-xl p-2.5 text-center flex flex-col items-center">
-          <span className="text-[10px] uppercase text-[#F6FFEA]/60 font-medium">Humidity</span>
-          <span className="text-base font-bold text-[#62C4DA] mt-0.5">
+          <span className="text-[10px] uppercase text-[var(--honeydew)]/60 font-medium">Humidity</span>
+          <span className="text-base font-bold text-[var(--sky-blue)] mt-0.5">
             {humidity}%
           </span>
-          <span className="text-[10px] text-[#62C4DA]/80 mt-0.5">Relative</span>
+          <span className="text-[10px] text-[var(--sky-blue)]/80 mt-0.5">Relative</span>
         </div>
       </div>
     </div>
   );
 }
+
