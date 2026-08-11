@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && npx cap sync",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:ble": "node tests/bleHardwareService.test.mjs"
   },
   "dependencies": {
     "@capacitor-community/bluetooth-le": "^8.2.0",
