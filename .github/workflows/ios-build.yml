@@ -1,0 +1,59 @@
+name: Build iOS (Unsigned IPA)
+
+on:
+  # Allows you to trigger the build manually from the Actions tab
+  workflow_dispatch:
+  # Or uncomment below to build on every push to main
+  # push:
+  #   branches:
+  #     - main
+
+jobs:
+  build:
+    name: Build iOS App
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Web App & Sync Capacitor
+        run: npm run build
+
+      - name: Build Unsigned iOS App
+        working-directory: ios/App
+        # We compile the app without code signing so it can be sideloaded using Sideloadly/AltStore on Windows.
+        run: |
+          xcodebuild -workspace App.xcworkspace \
+                     -scheme App \
+                     -configuration Release \
+                     -sdk iphoneos \
+                     -derivedDataPath build \
+                     CODE_SIGN_IDENTITY="" \
+                     CODE_SIGNING_REQUIRED=NO \
+                     CODE_SIGNING_ALLOWED=NO \
+                     build
+                     
+      - name: Package into IPA
+        working-directory: ios/App
+        run: |
+          mkdir -p Payload
+          # Move the compiled app into the Payload folder
+          cp -r build/Build/Products/Release-iphoneos/App.app Payload/
+          # Zip it up as an .ipa file
+          zip -r kabheat-ios.ipa Payload
+          
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kabheat-ios-app
+          path: ios/App/kabheat-ios.ipa
+          retention-days: 7
