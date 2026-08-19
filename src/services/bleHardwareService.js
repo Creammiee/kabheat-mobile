@@ -51,11 +51,12 @@ function parseKabheatPacket(rawString) {
   const tempValue = fields.get("TEMP");
   const heartRateRaw = parseInteger(fields.get("HR"), "HR");
   const spO2Raw = parseInteger(fields.get("SPO2"), "SPO2");
+  const adjustedSpO2 = Math.min(100, spO2Raw + 19); // +19 offset, capped at 100
   const telemetry = {
     gsr,
     bodyTemp: tempValue.toUpperCase() === "NA" ? null : Number(tempValue),
     heartRate: heartRateRaw > 50 ? heartRateRaw : null,
-    spO2: spO2Raw >= 70 ? spO2Raw : null,
+    spO2: adjustedSpO2 >= 70 ? adjustedSpO2 : null,
   };
 
   if (telemetry.bodyTemp !== null && !Number.isFinite(telemetry.bodyTemp)) {
