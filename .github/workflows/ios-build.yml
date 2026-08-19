@@ -24,8 +24,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          rm -f package-lock.json
-          npm install
+          rm -rf package-lock.json node_modules
+          npm install --include=optional
 
       - name: Build Web App & Sync Capacitor
         run: npm run build
