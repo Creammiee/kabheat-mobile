@@ -12,6 +12,7 @@ import { calculateHeatIndex, getHeatRiskLevel, INITIAL_HEAT_LOGS } from "./utils
 import { applyTheme, DEFAULT_THEME_CONFIG } from "./utils/themeEngine";
 import { saveHeatLogToCloud, fetchRecentHeatLogs, auth } from "./services/firebaseService";
 import { onAuthStateChanged } from "firebase/auth";
+import { Geolocation } from "@capacitor/geolocation";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("home");
@@ -72,7 +73,14 @@ export default function App() {
   });
 
   // Heat Logs List
-  const [logs, setLogs] = useState(INITIAL_HEAT_LOGS);
+  const [logs, setLogs] = useState(() => {
+    const saved = localStorage.getItem("kabheat_logs");
+    return saved ? JSON.parse(saved) : INITIAL_HEAT_LOGS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("kabheat_logs", JSON.stringify(logs));
+  }, [logs]);
 
   // Emergency Contacts (Persisted)
   const [emergencyContacts, setEmergencyContacts] = useState(() => {
@@ -86,36 +94,53 @@ export default function App() {
 
   // Real-time calculated heat index (Heuristic)
   const heatIndex = calculateHeatIndex(telemetry.ambientTemp, telemetry.humidity);
-  const risk = getHeatRiskLevel(heatIndex, telemetry.bodyTemp);
+  const risk = getHeatRiskLevel(heatIndex, telemetry);
 
-  // GPS Location Tracking (Device built-in GPS)
+  // GPS Location Tracking (Capacitor)
   useEffect(() => {
-    if (!("geolocation" in navigator)) {
-      console.warn("Geolocation is not supported by this browser.");
-      return;
-    }
+    let watchId = null;
 
-    const watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        setTelemetry((prev) => ({
-          ...prev,
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-          satellites: "Device",
-        }));
-      },
-      (error) => {
-        console.warn("Error getting location: ", error.message);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0,
+    const startLocationTracking = async () => {
+      try {
+        const permissions = await Geolocation.checkPermissions();
+        if (permissions.location !== 'granted') {
+          const req = await Geolocation.requestPermissions();
+          if (req.location !== 'granted') {
+            console.warn("Location permission denied");
+            return;
+          }
+        }
+
+        watchId = await Geolocation.watchPosition(
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 },
+          (position, err) => {
+            if (err) {
+              console.warn("Error getting location: ", err);
+              return;
+            }
+            if (position) {
+              setTelemetry((prev) => ({
+                ...prev,
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                satellites: "GPS",
+              }));
+            }
+          }
+        );
+      } catch (err) {
+        console.warn("Geolocation init error: ", err);
       }
-    );
+    };
 
-    return () => navigator.geolocation.clearWatch(watchId);
+    startLocationTracking();
+
+    return () => {
+      if (watchId !== null) {
+        Geolocation.clearWatch({ id: watchId });
+      }
+    };
   }, []);
 
   // Fetch real-time weather (Ambient Temp & Humidity) based on Location
@@ -168,7 +193,11 @@ export default function App() {
     const loadCloudLogs = async () => {
       const cloudLogs = await fetchRecentHeatLogs();
       if (cloudLogs && cloudLogs.length > 0) {
-        setLogs(cloudLogs);
+        setLogs((prev) => {
+          const map = new Map(prev.map(l => [l.id, l]));
+          cloudLogs.forEach(l => map.set(l.id, l));
+          return Array.from(map.values()).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        });
       }
     };
     loadCloudLogs();
@@ -237,6 +266,8 @@ export default function App() {
           setThemeConfig={setThemeConfig}
           user={user}
           authLoading={authLoading}
+          setOpenIoTPairing={setOpenIoTPairing}
+          bleConnected={bleConnected}
         />
       )}
 

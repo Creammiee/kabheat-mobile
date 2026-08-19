@@ -130,11 +130,15 @@ export default function LiveTelemetryView({
             </div>
           </div>
           <div className="flex items-baseline gap-1.5 mt-2">
-            <span className="text-3xl font-extrabold text-white">{telemetry.gsr ?? "--"}</span>
-            <span className="text-xs text-[var(--soft-peach)] font-bold">ADC</span>
+            <span className="text-3xl font-extrabold text-white">
+              {telemetry.gsrDropPercent !== undefined && telemetry.gsrDropPercent !== null ? telemetry.gsrDropPercent : "--"}
+            </span>
+            <span className="text-xs text-[var(--soft-peach)] font-bold">% LOSS</span>
           </div>
           <p className="text-[10px] text-[var(--honeydew)]/50 mt-1">
-            {telemetry.gsr ? (telemetry.gsr > 700 ? "Heavy Sweating / Loss" : "Normal Conductance") : "No Data"}
+            {telemetry.gsrDropPercent !== undefined && telemetry.gsrDropPercent !== null 
+              ? (telemetry.gsrDropPercent > 40 ? "Heavy Sweating / Loss" : "Normal Conductance") 
+              : "Calibrating..."}
           </p>
         </div>
 

@@ -34,9 +34,11 @@ export default function MobileShell({
   return (
     <div className="safe-area-shell w-full max-w-md mx-auto h-[100dvh] relative flex flex-col overflow-hidden bg-[var(--bg-dark)] text-[var(--honeydew)] shadow-2xl sm:border-x sm:border-white/10">
 
+        {/* Removed Custom Top Header to prevent overlapping with native status bar */}
+
         {/* Emergency SOS Banner (If Critical Risk or Triggered) */}
         {criticalAlert && (
-          <div className="bg-[var(--tomato-jam)] text-white px-4 py-2.5 text-xs font-bold flex items-center justify-between animate-pulse">
+          <div className="bg-[var(--tomato-jam)] text-white px-4 py-2.5 text-xs font-bold flex items-center justify-between animate-pulse shrink-0">
             <div className="flex items-center gap-2">
               <AlertTriangle size={16} className="animate-bounce" />
               <span>CRITICAL HEAT STROKE WARNING DETECTED!</span>

@@ -16,7 +16,10 @@ import {
   Mail,
   Fingerprint,
   Plus,
-  Camera
+  Camera,
+  Wifi,
+  WifiOff,
+  Bluetooth
 } from "lucide-react";
 import {
   COLOR_THEME_PRESETS,
@@ -36,7 +39,9 @@ export default function ProfileView({
   themeConfig,
   setThemeConfig,
   user,
-  authLoading
+  authLoading,
+  setOpenIoTPairing,
+  bleConnected
 }) {
   const [showAddContact, setShowAddContact] = useState(false);
   const [newContact, setNewContact] = useState({ name: "", relation: "", phone: "" });
@@ -133,6 +138,38 @@ export default function ProfileView({
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* Hardware & Sensors (IoT Pairing) */}
+          <div className="glass-panel rounded-3xl p-5 border border-white/5 shadow-lg relative overflow-hidden">
+            <div className="flex items-center justify-between mb-4 relative z-10">
+              <h3 className="text-sm font-black text-[var(--sky-blue)] tracking-tight flex items-center gap-2">
+                <Bluetooth size={18} /> Hardware & Sensors
+              </h3>
+              <span className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold border ${
+                bleConnected 
+                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
+                  : "bg-[var(--sky-blue)]/10 text-[var(--sky-blue)] border-[var(--sky-blue)]/20"
+              }`}>
+                {bleConnected ? "Connected" : "Disconnected"}
+              </span>
+            </div>
+            
+            <p className="text-xs text-[var(--honeydew)]/60 mb-4 relative z-10">
+              Manage your connection to the KabHeat IoT biomonitoring band.
+            </p>
+
+            <button
+              onClick={() => setOpenIoTPairing(true)}
+              className={`w-full py-4 rounded-2xl text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg relative z-10 ${
+                bleConnected
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20"
+                  : "bg-gradient-sunset text-white border border-transparent hover:brightness-110"
+              }`}
+            >
+              {bleConnected ? <Wifi size={18} /> : <WifiOff size={18} />}
+              {bleConnected ? "Manage Active IoT Band" : "Pair New IoT Band"}
+            </button>
           </div>
 
           {/* Emergency SOS Contacts (Restored & Upgraded) */}

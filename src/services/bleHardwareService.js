@@ -49,19 +49,106 @@ function parseKabheatPacket(rawString) {
 
   const gsr = parseInteger(fields.get("GSR"), "GSR");
   const tempValue = fields.get("TEMP");
-  const heartRate = parseInteger(fields.get("HR"), "HR");
-  const spO2 = parseInteger(fields.get("SPO2"), "SPO2");
+  const heartRateRaw = parseInteger(fields.get("HR"), "HR");
+  const spO2Raw = parseInteger(fields.get("SPO2"), "SPO2");
   const telemetry = {
     gsr,
     bodyTemp: tempValue.toUpperCase() === "NA" ? null : Number(tempValue),
-    heartRate: heartRate || null,
-    spO2: spO2 || null,
+    heartRate: heartRateRaw > 50 ? heartRateRaw : null,
+    spO2: spO2Raw >= 70 ? spO2Raw : null,
   };
 
   if (telemetry.bodyTemp !== null && !Number.isFinite(telemetry.bodyTemp)) {
     throw new Error("TEMP must be a number or NA");
   }
   return telemetry;
+}
+
+class SignalFilter {
+  constructor(windowSize = 5, alpha = 0.3) {
+    this.windowSize = windowSize;
+    this.alpha = alpha;
+    this.buffer = [];
+    this.ema = null;
+  }
+
+  process(val) {
+    if (val === null || val === undefined) return null;
+    
+    // 1. Median Filter (outlier rejection)
+    this.buffer.push(val);
+    if (this.buffer.length > this.windowSize) {
+      this.buffer.shift();
+    }
+    const sorted = [...this.buffer].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    const median = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    
+    // 2. Exponential Moving Average (smoothing)
+    if (this.ema === null) {
+      this.ema = median;
+    } else {
+      this.ema = this.alpha * median + (1 - this.alpha) * this.ema;
+    }
+    
+    return this.ema;
+  }
+
+  reset() {
+    this.buffer = [];
+    this.ema = null;
+  }
+}
+
+class TelemetryFilter {
+  constructor() {
+    this.hrFilter = new SignalFilter(5, 0.3);
+    this.spO2Filter = new SignalFilter(5, 0.3);
+    this.tempFilter = new SignalFilter(3, 0.5);
+    this.gsrFilter = new SignalFilter(5, 0.2);
+    this.baselineGsr = null;
+  }
+
+  process(rawTelemetry) {
+    let { heartRate, spO2, bodyTemp, gsr } = rawTelemetry;
+
+    // Hard clamp obviously impossible values
+    if (spO2 !== null) spO2 = Math.min(100, Math.max(0, spO2));
+    if (heartRate !== null) heartRate = Math.min(250, Math.max(0, heartRate));
+    
+    const filteredHR = this.hrFilter.process(heartRate);
+    const filteredSpO2 = this.spO2Filter.process(spO2);
+    const filteredTemp = this.tempFilter.process(bodyTemp);
+    const filteredGsr = this.gsrFilter.process(gsr);
+
+    if (filteredGsr !== null && this.baselineGsr === null && this.gsrFilter.buffer.length >= 5) {
+      this.baselineGsr = filteredGsr;
+    }
+
+    let gsrDropPercent = null;
+    if (filteredGsr !== null && this.baselineGsr !== null && this.baselineGsr > 0) {
+      const drop = this.baselineGsr - filteredGsr;
+      gsrDropPercent = Math.max(0, (drop / this.baselineGsr) * 100);
+    }
+
+    return {
+      ...rawTelemetry,
+      heartRate: filteredHR !== null ? Math.round(filteredHR) : null,
+      spO2: filteredSpO2 !== null ? Math.round(filteredSpO2) : null,
+      bodyTemp: filteredTemp !== null ? Number(filteredTemp.toFixed(1)) : null,
+      gsr: filteredGsr !== null ? Math.round(filteredGsr) : null,
+      gsrBaseline: this.baselineGsr !== null ? Math.round(this.baselineGsr) : null,
+      gsrDropPercent: gsrDropPercent !== null ? Math.round(gsrDropPercent) : null,
+    };
+  }
+
+  reset() {
+    this.hrFilter.reset();
+    this.spO2Filter.reset();
+    this.tempFilter.reset();
+    this.gsrFilter.reset();
+    this.baselineGsr = null;
+  }
 }
 
 /** Parses a Pico packet into the app's telemetry shape. */
@@ -141,6 +228,7 @@ class BLEHardwareManager {
     this.listeners = new Set();
     this.decoder = new TextDecoder("utf-8");
     this.framer = new KabheatPacketFramer();
+    this.telemetryFilter = new TelemetryFilter();
     this.diagnostics = this.#newDiagnostics();
   }
 
@@ -190,6 +278,7 @@ class BLEHardwareManager {
 
   #resetSession() {
     this.framer.reset();
+    this.telemetryFilter.reset();
     this.decoder = new TextDecoder("utf-8");
     this.diagnostics = this.#newDiagnostics();
   }
@@ -377,8 +466,9 @@ class BLEHardwareManager {
           continue;
         }
         this.diagnostics.packetCount += 1;
-        this.diagnostics.lastParsedTelemetry = result.telemetry;
-        this.onTelemetryUpdate?.(result.telemetry, result.rawPacket);
+        const filteredTelemetry = this.telemetryFilter.process(result.telemetry);
+        this.diagnostics.lastParsedTelemetry = filteredTelemetry;
+        this.onTelemetryUpdate?.(filteredTelemetry, result.rawPacket);
       }
     } catch (error) {
       this.diagnostics.lastTransportError = error.message || String(error);
@@ -396,6 +486,7 @@ class BLEHardwareManager {
     this.deviceId = null;
     this.deviceName = null;
     this.framer.reset();
+    this.telemetryFilter.reset();
     this.decoder = new TextDecoder("utf-8");
     Object.assign(this.diagnostics, { connected: false, deviceId: null, deviceName: null });
 

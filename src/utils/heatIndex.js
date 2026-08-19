@@ -46,8 +46,13 @@ export function calculateHeatIndex(tempC, humidity) {
   return Math.round(hiC * 10) / 10;
 }
 
-// Risk Level Classification based on Heat Index (°C)
-export function getHeatRiskLevel(heatIndexC, bodyTempC = 37.0) {
+// Risk Level Classification based on Heat Index (°C) and IoT Telemetry
+export function getHeatRiskLevel(heatIndexC, telemetry = {}) {
+  // Support both old signature (bodyTempC as number) and new signature (telemetry object)
+  const bodyTempC = typeof telemetry === 'number' ? telemetry : (telemetry.bodyTemp || 37.0);
+  const hr = telemetry.heartRate;
+  const gsrDrop = telemetry.gsrDropPercent;
+
   if (heatIndexC === null || isNaN(heatIndexC)) {
     return {
       level: "UNKNOWN",
@@ -62,7 +67,23 @@ export function getHeatRiskLevel(heatIndexC, bodyTempC = 37.0) {
     };
   }
 
-  if (bodyTempC >= 39.5 || heatIndexC >= 48) {
+  // Multi-symptom Heatstroke Detection
+  const hasAllSensors = hr !== undefined && hr !== null && gsrDrop !== undefined && gsrDrop !== null && bodyTempC !== undefined;
+
+  // Based on experimental data: GSR represents resistance. 
+  // Baseline (Dry): > 20000. Sweating (Moist): < 20000. Heavy Sweating: < 10000. Heatstroke (Dry): > 20000.
+  const gsrRaw = telemetry.gsr; // Use raw resistance for thresholds, not the percentage drop
+
+  // Level 4 (CRITICAL - Heatstroke): Skin > 39.0°C, HR > 140 BPM, Sweat Failure (Dry skin > 20000)
+  const isHeatstroke = hasAllSensors && hr > 140 && gsrRaw > 20000 && bodyTempC > 39.0;
+
+  // Level 3 (DANGER - Heat Exhaustion): Skin >= 38.0°C, HR > 120 BPM, Heavy Sweating (< 10000)
+  const isHeatExhaustion = hasAllSensors && hr > 120 && gsrRaw < 10000 && bodyTempC >= 38.0;
+
+  // Level 2 (WARNING - Heat Stress): Skin >= 36.5°C, HR >= 100 BPM, Active Sweating (< 20000)
+  const isHeatStress = hasAllSensors && hr >= 100 && gsrRaw < 20000 && bodyTempC >= 36.5;
+
+  if (bodyTempC >= 39.5 || heatIndexC >= 48 || isHeatstroke) {
     return {
       level: "CRITICAL",
       color: "var(--tomato-jam)",
@@ -76,7 +97,7 @@ export function getHeatRiskLevel(heatIndexC, bodyTempC = 37.0) {
     };
   }
 
-  if (bodyTempC >= 38.5 || heatIndexC >= 41) {
+  if (bodyTempC >= 38.5 || heatIndexC >= 41 || isHeatExhaustion) {
     return {
       level: "DANGER",
       color: "var(--coral-glow)",
@@ -90,7 +111,7 @@ export function getHeatRiskLevel(heatIndexC, bodyTempC = 37.0) {
     };
   }
 
-  if (bodyTempC >= 37.8 || heatIndexC >= 33) {
+  if (bodyTempC >= 37.8 || heatIndexC >= 33 || isHeatStress) {
     return {
       level: "WARNING",
       color: "var(--soft-peach)",
