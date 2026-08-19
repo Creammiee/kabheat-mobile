@@ -32,7 +32,8 @@ jobs:
         working-directory: ios/App
         # We compile the app without code signing so it can be sideloaded using Sideloadly/AltStore on Windows.
         run: |
-          xcodebuild -workspace App.xcworkspace \
+          chmod -R +x .
+          xcodebuild -project App.xcodeproj \
                      -scheme App \
                      -configuration Release \
                      -sdk iphoneos \
