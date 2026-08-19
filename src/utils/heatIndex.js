@@ -83,7 +83,19 @@ export function getHeatRiskLevel(heatIndexC, telemetry = {}) {
   // Level 2 (WARNING - Heat Stress): Skin >= 36.5°C, HR >= 100 BPM, Active Sweating (< 20000)
   const isHeatStress = hasAllSensors && hr >= 100 && gsrRaw < 20000 && bodyTempC >= 36.5;
 
-  if (bodyTempC >= 39.5 || heatIndexC >= 48 || isHeatstroke) {
+  // Apply metabolic heat generation offset based on physical exertion
+  let effectiveHeatIndex = heatIndexC;
+  if (telemetry.activityLevel) {
+    const exertionOffsets = {
+      sedentary: 0,
+      light: 1.5,
+      moderate: 3.0,
+      heavy: 5.0
+    };
+    effectiveHeatIndex += (exertionOffsets[telemetry.activityLevel] || 0);
+  }
+
+  if (bodyTempC >= 39.5 || effectiveHeatIndex >= 48 || isHeatstroke) {
     return {
       level: "CRITICAL",
       color: "var(--tomato-jam)",
@@ -97,7 +109,7 @@ export function getHeatRiskLevel(heatIndexC, telemetry = {}) {
     };
   }
 
-  if (bodyTempC >= 38.5 || heatIndexC >= 41 || isHeatExhaustion) {
+  if (bodyTempC >= 38.5 || effectiveHeatIndex >= 41 || isHeatExhaustion) {
     return {
       level: "DANGER",
       color: "var(--coral-glow)",
@@ -111,7 +123,7 @@ export function getHeatRiskLevel(heatIndexC, telemetry = {}) {
     };
   }
 
-  if (bodyTempC >= 37.8 || heatIndexC >= 33 || isHeatStress) {
+  if (bodyTempC >= 37.8 || effectiveHeatIndex >= 32 || isHeatStress) {
     return {
       level: "WARNING",
       color: "var(--soft-peach)",
