@@ -257,6 +257,63 @@ export default function ProfileView({
             </div>
           </div>
 
+          {/* Sensor Calibration & Offsets */}
+          <div className="glass-panel rounded-3xl p-5 border border-[var(--coral-glow)]/20 shadow-lg relative overflow-hidden mt-4">
+            <div className="flex items-center justify-between mb-4 relative z-10">
+              <h3 className="text-sm font-black text-[var(--coral-glow)] tracking-tight flex items-center gap-2">
+                <Sliders size={18} /> Sensor Calibration
+              </h3>
+            </div>
+            
+            <p className="text-xs text-[var(--honeydew)]/60 mb-4 relative z-10">
+              Adjust offsets to improve accuracy (e.g. accounting for skin distance).
+            </p>
+
+            <div className="space-y-4 relative z-10">
+              {/* Temperature Offset */}
+              <div className="flex items-center justify-between bg-black/30 p-3 rounded-2xl border border-white/5">
+                <div>
+                  <div className="text-sm font-bold text-[var(--honeydew)]">Body Temp Offset</div>
+                  <div className="text-[10px] text-[var(--honeydew)]/50 mt-0.5">Applied to skin temperature (°C)</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setTempOffset(Number((tempOffset - 0.1).toFixed(1)))}
+                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-[var(--coral-glow)]/50 flex items-center justify-center text-white"
+                  >-</button>
+                  <span className="w-12 text-center text-sm font-bold text-white">
+                    {tempOffset > 0 ? `+${tempOffset.toFixed(1)}` : tempOffset.toFixed(1)}
+                  </span>
+                  <button 
+                    onClick={() => setTempOffset(Number((tempOffset + 0.1).toFixed(1)))}
+                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-[var(--coral-glow)]/50 flex items-center justify-center text-white"
+                  >+</button>
+                </div>
+              </div>
+
+              {/* Heart Rate Offset */}
+              <div className="flex items-center justify-between bg-black/30 p-3 rounded-2xl border border-white/5">
+                <div>
+                  <div className="text-sm font-bold text-[var(--honeydew)]">Heart Rate Offset</div>
+                  <div className="text-[10px] text-[var(--honeydew)]/50 mt-0.5">Applied to optical HR (BPM)</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setHrOffset(hrOffset - 1)}
+                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-[var(--coral-glow)]/50 flex items-center justify-center text-white"
+                  >-</button>
+                  <span className="w-12 text-center text-sm font-bold text-white">
+                    {hrOffset > 0 ? `+${hrOffset}` : hrOffset}
+                  </span>
+                  <button 
+                    onClick={() => setHrOffset(hrOffset + 1)}
+                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-[var(--coral-glow)]/50 flex items-center justify-center text-white"
+                  >+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <button 
             onClick={async () => {
               const { logoutUser } = await import("../services/firebaseService");

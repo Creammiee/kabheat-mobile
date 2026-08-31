@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { History, Plus, Search, Filter, MapPin, Calendar, AlertTriangle, ShieldCheck, Thermometer } from "lucide-react";
 import { formatTemp } from "../utils/heatIndex";
 
-export default function LogsView({ logs, setOpenAddLogModal, tempUnit }) {
+export default function LogsView({ logs, setOpenAddLogModal, tempUnit, isLogging, setIsLogging, sessionLogs, setSessionLogs, bleConnected }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
@@ -13,6 +13,39 @@ export default function LogsView({ logs, setOpenAddLogModal, tempUnit }) {
     const matchesFilter = filterStatus === "all" || log.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
+
+  const exportCSV = () => {
+    if (sessionLogs.length === 0) return;
+    const headers = ["Timestamp", "BodyTemp1_C", "BodyTemp2_C", "HR1_BPM", "HR2_BPM", "SpO2_1", "SpO2_2", "GSR_Raw", "Activity", "Latitude", "Longitude"];
+    const rows = sessionLogs.map(log => [
+      log.timestamp,
+      log.bodyTemp ?? "",
+      log.bodyTemp2 ?? "",
+      log.heartRate ?? "",
+      log.heartRate2 ?? "",
+      log.spO2 ?? "",
+      log.spO22 ?? "",
+      log.gsr ?? "",
+      log.activityLevel ?? "",
+      log.latitude ?? "",
+      log.longitude ?? ""
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `kabheat_log_${new Date().getTime()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setSessionLogs([]);
+  };
 
   return (
     <div className="space-y-4">
@@ -30,6 +63,46 @@ export default function LogsView({ logs, setOpenAddLogModal, tempUnit }) {
         >
           <Plus size={14} /> Log Entry
         </button>
+      </div>
+
+      {/* Continuous Logging Panel */}
+      <div className="glass-panel rounded-3xl p-4 border border-[var(--sky-blue)]/20 shadow-lg space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-[var(--sky-blue)]">Continuous Sensor Logging</h3>
+          {isLogging && (
+            <span className="flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-[var(--honeydew)]/60">
+          Record all raw hardware sensor data (Dual HR, Temp, SpO2, GSR) to an Excel-compatible CSV file.
+        </p>
+        
+        <div className="flex gap-2">
+          {!isLogging ? (
+            <button
+              onClick={() => setIsLogging(true)}
+              disabled={!bleConnected}
+              className={`flex-1 py-3 rounded-xl text-xs font-black transition-all ${
+                bleConnected ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30" : "bg-white/5 text-white/30 border border-white/10"
+              }`}
+            >
+              Start Recording
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                setIsLogging(false);
+                exportCSV();
+              }}
+              className="flex-1 py-3 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 text-xs font-black transition-all"
+            >
+              Stop & Save CSV ({sessionLogs.length} rows)
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Search & Filter Bar */}

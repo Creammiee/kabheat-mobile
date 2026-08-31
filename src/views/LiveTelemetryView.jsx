@@ -76,15 +76,39 @@ export default function LiveTelemetryView({
           </div>
           <div className="flex items-baseline gap-1.5 mt-2">
             <span className="text-3xl font-extrabold text-white">
-              {formatTemp(telemetry.bodyTemp, tempUnit).replace(/°[CF]/, "")}
+              {telemetry.bodyTemp ? formatTemp(telemetry.bodyTemp, tempUnit).replace(/°[CF]/, "") : "--"}
             </span>
             <span className="text-xs text-[var(--coral-glow)] font-bold">
               {tempUnit === "celsius" ? "°C" : "°F"}
             </span>
+            {!telemetry.bodyTemp && bleConnected && <span className="text-[10px] text-red-500 font-bold ml-2 bg-red-500/20 px-1.5 py-0.5 rounded">MAIN SENSOR ERROR</span>}
           </div>
           <p className="text-[10px] text-[var(--honeydew)]/50 mt-1">
             {telemetry.bodyTemp >= 38.5 ? "Hyperthermia Alert" : "Normal Skin Temp"}
           </p>
+          
+          {/* Support Sensor Reference */}
+          {telemetry.bodyTemp2 !== undefined && (
+            <div className="mt-3 pt-2 border-t border-white/10 space-y-1">
+              <div className="flex justify-between items-center text-[10px]">
+                <span className="text-[var(--honeydew)]/50">Reference Sensor:</span>
+                <strong className={telemetry.bodyTemp2 ? "text-white" : "text-red-500"}>
+                  {telemetry.bodyTemp2 ? formatTemp(telemetry.bodyTemp2, tempUnit) : "SENSOR 2 ERROR"}
+                </strong>
+              </div>
+              {telemetry.bodyTemp && telemetry.bodyTemp2 && (
+                <div className="flex justify-between items-center text-[10px]">
+                  <span className="text-[var(--honeydew)]/50">Difference:</span>
+                  <div className="text-right">
+                    <span className="text-white mr-1">{Math.abs(telemetry.bodyTemp - telemetry.bodyTemp2).toFixed(1)}°</span>
+                    <strong className={Math.abs(telemetry.bodyTemp - telemetry.bodyTemp2) > 1.0 ? "text-red-400 bg-red-400/10 px-1 rounded" : "text-emerald-400 bg-emerald-400/10 px-1 rounded"}>
+                      {Math.abs(telemetry.bodyTemp - telemetry.bodyTemp2) > 1.0 ? "Abnormal" : "Normal"}
+                    </strong>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Heart Rate */}
@@ -98,10 +122,34 @@ export default function LiveTelemetryView({
           <div className="flex items-baseline gap-1.5 mt-2">
             <span className="text-3xl font-extrabold text-white">{telemetry.heartRate ?? "--"}</span>
             <span className="text-xs text-red-400 font-bold">BPM</span>
+            {!telemetry.heartRate && bleConnected && <span className="text-[10px] text-red-500 font-bold ml-2 bg-red-500/20 px-1.5 py-0.5 rounded">MAIN SENSOR ERROR</span>}
           </div>
           <p className="text-[10px] text-[var(--honeydew)]/50 mt-1">
             {telemetry.heartRate ? (telemetry.heartRate > 110 ? "High Cardiac Strain" : "Normal Pulse") : "No Data"}
           </p>
+
+          {/* Support Sensor Reference */}
+          {telemetry.heartRate2 !== undefined && (
+            <div className="mt-3 pt-2 border-t border-white/10 space-y-1">
+              <div className="flex justify-between items-center text-[10px]">
+                <span className="text-[var(--honeydew)]/50">Reference Sensor:</span>
+                <strong className={telemetry.heartRate2 ? "text-white" : "text-red-500"}>
+                  {telemetry.heartRate2 ? `${telemetry.heartRate2} BPM` : "SENSOR 2 ERROR"}
+                </strong>
+              </div>
+              {telemetry.heartRate && telemetry.heartRate2 && (
+                <div className="flex justify-between items-center text-[10px]">
+                  <span className="text-[var(--honeydew)]/50">Difference:</span>
+                  <div className="text-right">
+                    <span className="text-white mr-1">{Math.abs(telemetry.heartRate - telemetry.heartRate2)} BPM</span>
+                    <strong className={Math.abs(telemetry.heartRate - telemetry.heartRate2) > 10 ? "text-red-400 bg-red-400/10 px-1 rounded" : "text-emerald-400 bg-emerald-400/10 px-1 rounded"}>
+                      {Math.abs(telemetry.heartRate - telemetry.heartRate2) > 10 ? "Abnormal" : "Normal"}
+                    </strong>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* SpO2 */}
@@ -121,24 +169,27 @@ export default function LiveTelemetryView({
           </p>
         </div>
 
-        {/* GSR Sweat Conductance */}
+        {/* GSR Skin Resistance (Swapped for Display) */}
         <div className="glass-panel rounded-3xl p-4 border border-[var(--soft-peach)]/30 relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-[var(--soft-peach)] uppercase tracking-wider">GSR Sweat</span>
+            <span className="text-[11px] font-semibold text-[var(--soft-peach)] uppercase tracking-wider">GSR Level</span>
             <div className="p-1.5 rounded-xl bg-[var(--soft-peach)]/20 text-[var(--soft-peach)]">
               <Wind size={16} />
             </div>
           </div>
           <div className="flex items-baseline gap-1.5 mt-2">
             <span className="text-3xl font-extrabold text-white">
-              {telemetry.gsrDropPercent !== undefined && telemetry.gsrDropPercent !== null ? telemetry.gsrDropPercent : "--"}
+              {telemetry.gsr && telemetry.gsr > 0 ? Math.min(30000, Math.round(100000000 / telemetry.gsr)).toLocaleString() : "--"}
             </span>
-            <span className="text-xs text-[var(--soft-peach)] font-bold">% LOSS</span>
+            <span className="text-xs text-[var(--soft-peach)] font-bold">Units</span>
           </div>
           <p className="text-[10px] text-[var(--honeydew)]/50 mt-1">
-            {telemetry.gsrDropPercent !== undefined && telemetry.gsrDropPercent !== null 
-              ? (telemetry.gsrDropPercent > 40 ? "Heavy Sweating / Loss" : "Normal Conductance") 
-              : "Calibrating..."}
+            {telemetry.gsr && telemetry.gsr > 0 
+              ? (Math.min(30000, Math.round(100000000 / telemetry.gsr)) > 20000 ? "Heavy Sweating"
+                 : Math.min(30000, Math.round(100000000 / telemetry.gsr)) >= 5000 ? "Moderate Sweating"
+                 : Math.min(30000, Math.round(100000000 / telemetry.gsr)) >= 0 ? "Minimal Sweating"
+                 : "Poor Contact") 
+              : "Waiting for data..."}
           </p>
         </div>
 

@@ -20,7 +20,7 @@ const SCAN_TIMEOUT_MS = 10_000;
 const RECONNECT_DELAY_MS = 2_000;
 const MAX_RECONNECT_ATTEMPTS = 3;
 const MAX_RECEIVE_BUFFER_BYTES = 4 * 1024;
-const REQUIRED_FIELDS = ["GSR", "TEMP", "HR", "SPO2"];
+const REQUIRED_FIELDS = ["GSR", "TEMP1", "TEMP2", "HR1", "SPO21", "HR2", "SPO22"];
 
 function sameUuid(left, right) {
   return left?.toLowerCase() === right.toLowerCase();
@@ -48,19 +48,28 @@ function parseKabheatPacket(rawString) {
   if (missing.length) throw new Error(`Missing required field(s): ${missing.join(", ")}`);
 
   const gsr = parseInteger(fields.get("GSR"), "GSR");
-  const tempValue = fields.get("TEMP");
-  const heartRateRaw = parseInteger(fields.get("HR"), "HR");
-  const spO2Raw = parseInteger(fields.get("SPO2"), "SPO2");
-  const adjustedSpO2 = Math.min(100, spO2Raw + 19); // +19 offset, capped at 100
+  const temp1Val = fields.get("TEMP1");
+  const temp2Val = fields.get("TEMP2");
+  const hr1Raw = parseInteger(fields.get("HR1"), "HR1");
+  const spo21Raw = parseInteger(fields.get("SPO21"), "SPO21");
+  const hr2Raw = parseInteger(fields.get("HR2"), "HR2");
+  const spo22Raw = parseInteger(fields.get("SPO22"), "SPO22");
+
   const telemetry = {
     gsr,
-    bodyTemp: tempValue.toUpperCase() === "NA" ? null : Number(tempValue),
-    heartRate: heartRateRaw > 50 ? heartRateRaw : null,
-    spO2: adjustedSpO2 >= 70 ? adjustedSpO2 : null,
+    bodyTemp: temp1Val.toUpperCase() === "NA" ? null : Number(temp1Val),
+    bodyTemp2: temp2Val.toUpperCase() === "NA" ? null : Number(temp2Val),
+    heartRate: hr1Raw > 0 ? hr1Raw + 19 : null, // +19 hardware offset
+    heartRate2: hr2Raw > 0 ? hr2Raw + 19 : null,
+    spO2: spo21Raw > 0 ? Math.min(100, spo21Raw + 19) : null,
+    spO22: spo22Raw > 0 ? Math.min(100, spo22Raw + 19) : null,
   };
 
   if (telemetry.bodyTemp !== null && !Number.isFinite(telemetry.bodyTemp)) {
-    throw new Error("TEMP must be a number or NA");
+    throw new Error("TEMP1 must be a number or NA");
+  }
+  if (telemetry.bodyTemp2 !== null && !Number.isFinite(telemetry.bodyTemp2)) {
+    throw new Error("TEMP2 must be a number or NA");
   }
   return telemetry;
 }
@@ -106,20 +115,32 @@ class TelemetryFilter {
     this.hrFilter = new SignalFilter(5, 0.3);
     this.spO2Filter = new SignalFilter(5, 0.3);
     this.tempFilter = new SignalFilter(3, 0.5);
+
+    this.hr2Filter = new SignalFilter(5, 0.3);
+    this.spO22Filter = new SignalFilter(5, 0.3);
+    this.temp2Filter = new SignalFilter(3, 0.5);
+
     this.gsrFilter = new SignalFilter(5, 0.2);
     this.baselineGsr = null;
   }
 
   process(rawTelemetry) {
-    let { heartRate, spO2, bodyTemp, gsr } = rawTelemetry;
+    let { heartRate, heartRate2, spO2, spO22, bodyTemp, bodyTemp2, gsr } = rawTelemetry;
 
     // Hard clamp obviously impossible values
     if (spO2 !== null) spO2 = Math.min(100, Math.max(0, spO2));
+    if (spO22 !== null) spO22 = Math.min(100, Math.max(0, spO22));
     if (heartRate !== null) heartRate = Math.min(250, Math.max(0, heartRate));
+    if (heartRate2 !== null) heartRate2 = Math.min(250, Math.max(0, heartRate2));
     
     const filteredHR = this.hrFilter.process(heartRate);
     const filteredSpO2 = this.spO2Filter.process(spO2);
     const filteredTemp = this.tempFilter.process(bodyTemp);
+
+    const filteredHR2 = this.hr2Filter.process(heartRate2);
+    const filteredSpO22 = this.spO22Filter.process(spO22);
+    const filteredTemp2 = this.temp2Filter.process(bodyTemp2);
+
     const filteredGsr = this.gsrFilter.process(gsr);
 
     if (filteredGsr !== null && this.baselineGsr === null && this.gsrFilter.buffer.length >= 5) {
@@ -137,6 +158,11 @@ class TelemetryFilter {
       heartRate: filteredHR !== null ? Math.round(filteredHR) : null,
       spO2: filteredSpO2 !== null ? Math.round(filteredSpO2) : null,
       bodyTemp: filteredTemp !== null ? Number(filteredTemp.toFixed(1)) : null,
+      
+      heartRate2: filteredHR2 !== null ? Math.round(filteredHR2) : null,
+      spO22: filteredSpO22 !== null ? Math.round(filteredSpO22) : null,
+      bodyTemp2: filteredTemp2 !== null ? Number(filteredTemp2.toFixed(1)) : null,
+
       gsr: filteredGsr !== null ? Math.round(filteredGsr) : null,
       gsrBaseline: this.baselineGsr !== null ? Math.round(this.baselineGsr) : null,
       gsrDropPercent: gsrDropPercent !== null ? Math.round(gsrDropPercent) : null,
@@ -147,6 +173,9 @@ class TelemetryFilter {
     this.hrFilter.reset();
     this.spO2Filter.reset();
     this.tempFilter.reset();
+    this.hr2Filter.reset();
+    this.spO22Filter.reset();
+    this.temp2Filter.reset();
     this.gsrFilter.reset();
     this.baselineGsr = null;
   }
@@ -231,6 +260,13 @@ class BLEHardwareManager {
     this.framer = new KabheatPacketFramer();
     this.telemetryFilter = new TelemetryFilter();
     this.diagnostics = this.#newDiagnostics();
+    this.tempOffset = 0;
+    this.hrOffset = 0;
+  }
+
+  setOffsets(tempOffset, hrOffset) {
+    this.tempOffset = tempOffset || 0;
+    this.hrOffset = hrOffset || 0;
   }
 
   #newDiagnostics() {
@@ -467,7 +503,18 @@ class BLEHardwareManager {
           continue;
         }
         this.diagnostics.packetCount += 1;
-        const filteredTelemetry = this.telemetryFilter.process(result.telemetry);
+        
+        // Apply Offsets
+        const telemetryWithOffsets = {
+          ...result.telemetry,
+          bodyTemp: result.telemetry.bodyTemp !== null ? result.telemetry.bodyTemp + this.tempOffset : null,
+          heartRate: result.telemetry.heartRate !== null ? result.telemetry.heartRate + this.hrOffset : null,
+          bodyTemp2: result.telemetry.bodyTemp2 !== null ? result.telemetry.bodyTemp2 + this.tempOffset : null,
+          heartRate2: result.telemetry.heartRate2 !== null ? result.telemetry.heartRate2 + this.hrOffset : null,
+        };
+
+        const filteredTelemetry = this.telemetryFilter.process(telemetryWithOffsets);
+        
         this.diagnostics.lastParsedTelemetry = filteredTelemetry;
         this.onTelemetryUpdate?.(filteredTelemetry, result.rawPacket);
       }

@@ -21,9 +21,25 @@ export default function App() {
     const saved = localStorage.getItem("kabheat_alertThreshold");
     return saved ? JSON.parse(saved) : 45;
   });
+  const [tempOffset, setTempOffset] = useState(() => {
+    const saved = localStorage.getItem("kabheat_tempOffset");
+    return saved ? Number(saved) : 0;
+  });
+  const [hrOffset, setHrOffset] = useState(() => {
+    const saved = localStorage.getItem("kabheat_hrOffset");
+    return saved ? Number(saved) : 0;
+  });
 
   useEffect(() => localStorage.setItem("kabheat_tempUnit", tempUnit), [tempUnit]);
   useEffect(() => localStorage.setItem("kabheat_alertThreshold", JSON.stringify(alertThreshold)), [alertThreshold]);
+  useEffect(() => localStorage.setItem("kabheat_tempOffset", tempOffset.toString()), [tempOffset]);
+  useEffect(() => localStorage.setItem("kabheat_hrOffset", hrOffset.toString()), [hrOffset]);
+  
+  useEffect(() => {
+    import("./services/bleHardwareService").then(({ bleHardwareManager }) => {
+      bleHardwareManager.setOffsets(tempOffset, hrOffset);
+    });
+  }, [tempOffset, hrOffset]);
   const [bleConnected, setBleConnected] = useState(false);
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -58,7 +74,20 @@ export default function App() {
     activityLevel: "moderate", // 'sedentary' | 'light' | 'moderate' | 'heavy'
     latitude: null,
     longitude: null,
+    bodyTemp2: null,
+    heartRate2: null,
+    spO22: null,
   });
+
+  // Continuous Logging
+  const [isLogging, setIsLogging] = useState(false);
+  const [sessionLogs, setSessionLogs] = useState([]);
+  
+  useEffect(() => {
+    if (isLogging && bleConnected) {
+      setSessionLogs((prev) => [...prev, { ...telemetry, timestamp: new Date().toISOString() }]);
+    }
+  }, [telemetry, isLogging, bleConnected]);
 
   // Emergency SOS & Modals
   const [openIoTPairing, setOpenIoTPairing] = useState(false);
@@ -244,6 +273,11 @@ export default function App() {
           logs={logs}
           setOpenAddLogModal={setOpenAddLogModal}
           tempUnit={tempUnit}
+          isLogging={isLogging}
+          setIsLogging={setIsLogging}
+          sessionLogs={sessionLogs}
+          setSessionLogs={setSessionLogs}
+          bleConnected={bleConnected}
         />
       )}
 
@@ -268,6 +302,10 @@ export default function App() {
           authLoading={authLoading}
           setOpenIoTPairing={setOpenIoTPairing}
           bleConnected={bleConnected}
+          tempOffset={tempOffset}
+          setTempOffset={setTempOffset}
+          hrOffset={hrOffset}
+          setHrOffset={setHrOffset}
         />
       )}
 

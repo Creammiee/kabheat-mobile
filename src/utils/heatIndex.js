@@ -68,20 +68,20 @@ export function getHeatRiskLevel(heatIndexC, telemetry = {}) {
   }
 
   // Multi-symptom Heatstroke Detection
-  const hasAllSensors = hr !== undefined && hr !== null && gsrDrop !== undefined && gsrDrop !== null && bodyTempC !== undefined;
+  const gsrRaw = telemetry.gsr; // Use raw resistance for thresholds, not the percentage drop
+  const hasAllSensors = hr !== undefined && hr !== null && gsrRaw !== undefined && gsrRaw !== null && bodyTempC !== undefined;
 
   // Based on experimental data: GSR represents resistance. 
-  // Baseline (Dry): > 20000. Sweating (Moist): < 20000. Heavy Sweating: < 10000. Heatstroke (Dry): > 20000.
-  const gsrRaw = telemetry.gsr; // Use raw resistance for thresholds, not the percentage drop
+  // Baseline (Dry): > 20000. Sweating (Moist): <= 7000. Heavy Sweating: <= 3000. Heatstroke (Dry): > 20000.
 
   // Level 4 (CRITICAL - Heatstroke): Skin > 39.0°C, HR > 140 BPM, Sweat Failure (Dry skin > 20000)
   const isHeatstroke = hasAllSensors && hr > 140 && gsrRaw > 20000 && bodyTempC > 39.0;
 
-  // Level 3 (DANGER - Heat Exhaustion): Skin >= 38.0°C, HR > 120 BPM, Heavy Sweating (< 10000)
-  const isHeatExhaustion = hasAllSensors && hr > 120 && gsrRaw < 10000 && bodyTempC >= 38.0;
+  // Level 3 (DANGER - Heat Exhaustion): Skin >= 38.0°C, HR > 120 BPM, Heavy Sweating (<= 3000)
+  const isHeatExhaustion = hasAllSensors && hr > 120 && gsrRaw <= 3000 && bodyTempC >= 38.0;
 
-  // Level 2 (WARNING - Heat Stress): Skin >= 36.5°C, HR >= 100 BPM, Active Sweating (< 20000)
-  const isHeatStress = hasAllSensors && hr >= 100 && gsrRaw < 20000 && bodyTempC >= 36.5;
+  // Level 2 (WARNING - Heat Stress): Skin >= 36.5°C, HR >= 100 BPM, Active Sweating (<= 7000)
+  const isHeatStress = hasAllSensors && hr >= 100 && gsrRaw <= 7000 && bodyTempC >= 36.5;
 
   // Apply metabolic heat generation offset based on physical exertion
   let effectiveHeatIndex = heatIndexC;
