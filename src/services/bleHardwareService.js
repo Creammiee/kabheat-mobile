@@ -40,37 +40,48 @@ function parseKabheatPacket(rawString) {
   const fields = new Map();
   for (const part of line.split(",")) {
     const separator = part.indexOf(":");
-    if (separator < 1) throw new Error(`Invalid field: ${part}`);
+    if (separator < 1) continue;
     fields.set(part.slice(0, separator).trim().toUpperCase(), part.slice(separator + 1).trim());
   }
 
-  const missing = REQUIRED_FIELDS.filter((field) => !fields.has(field));
-  if (missing.length) throw new Error(`Missing required field(s): ${missing.join(", ")}`);
+  const telemetry = { gsr: undefined, bodyTemp: undefined, bodyTemp2: undefined, heartRate: undefined, heartRate2: undefined, spO2: undefined, spO22: undefined };
 
-  const gsr = parseInteger(fields.get("GSR"), "GSR");
-  const temp1Val = fields.get("TEMP1");
-  const temp2Val = fields.get("TEMP2");
-  const hr1Raw = parseInteger(fields.get("HR1"), "HR1");
-  const spo21Raw = parseInteger(fields.get("SPO21"), "SPO21");
-  const hr2Raw = parseInteger(fields.get("HR2"), "HR2");
-  const spo22Raw = parseInteger(fields.get("SPO22"), "SPO22");
-
-  const telemetry = {
-    gsr,
-    bodyTemp: temp1Val.toUpperCase() === "NA" ? null : Number(temp1Val),
-    bodyTemp2: temp2Val.toUpperCase() === "NA" ? null : Number(temp2Val),
-    heartRate: hr1Raw > 0 ? hr1Raw + 19 : null, // +19 hardware offset
-    heartRate2: hr2Raw > 0 ? hr2Raw + 19 : null,
-    spO2: spo21Raw > 0 ? Math.min(100, spo21Raw + 19) : null,
-    spO22: spo22Raw > 0 ? Math.min(100, spo22Raw + 19) : null,
-  };
-
-  if (telemetry.bodyTemp !== null && !Number.isFinite(telemetry.bodyTemp)) {
-    throw new Error("TEMP1 must be a number or NA");
+  if (fields.has("GSR")) {
+    try {
+      const rawGsr = parseInteger(fields.get("GSR"), "GSR");
+      telemetry.gsr = rawGsr > 0 ? Math.max(1, 50001 - Math.min(50000, rawGsr)) : null;
+    } catch {}
   }
-  if (telemetry.bodyTemp2 !== null && !Number.isFinite(telemetry.bodyTemp2)) {
-    throw new Error("TEMP2 must be a number or NA");
+
+  if (fields.has("TEMP1")) {
+    const val = fields.get("TEMP1");
+    telemetry.bodyTemp = val.toUpperCase() === "NA" ? null : Number(val);
+    if (!Number.isFinite(telemetry.bodyTemp) && telemetry.bodyTemp !== null) telemetry.bodyTemp = undefined;
   }
+
+  if (fields.has("TEMP2")) {
+    const val = fields.get("TEMP2");
+    telemetry.bodyTemp2 = val.toUpperCase() === "NA" ? null : Number(val);
+    if (!Number.isFinite(telemetry.bodyTemp2) && telemetry.bodyTemp2 !== null) telemetry.bodyTemp2 = undefined;
+  }
+
+  if (fields.has("HR1")) {
+    try { const r = parseInteger(fields.get("HR1"), "HR1"); telemetry.heartRate = r > 0 ? r : null; } catch {}
+  }
+  if (fields.has("HR2")) {
+    try { const r = parseInteger(fields.get("HR2"), "HR2"); telemetry.heartRate2 = r > 0 ? r : null; } catch {}
+  }
+  if (fields.has("SPO21")) {
+    try { const r = parseInteger(fields.get("SPO21"), "SPO21"); telemetry.spO2 = r > 0 ? r : null; } catch {}
+  }
+  if (fields.has("SPO22")) {
+    try { const r = parseInteger(fields.get("SPO22"), "SPO22"); telemetry.spO22 = r > 0 ? r : null; } catch {}
+  }
+
+  if (!Object.values(telemetry).some((v) => v !== undefined)) {
+    throw new Error("No valid fields found in packet");
+  }
+
   return telemetry;
 }
 
@@ -83,7 +94,12 @@ class SignalFilter {
   }
 
   process(val) {
-    if (val === null || val === undefined) return null;
+    if (val === undefined) return this.ema;
+    if (val === null) {
+      this.ema = null;
+      this.buffer = [];
+      return null;
+    }
     
     // 1. Median Filter (outlier rejection)
     this.buffer.push(val);
@@ -125,23 +141,33 @@ class TelemetryFilter {
   }
 
   process(rawTelemetry) {
-    let { heartRate, heartRate2, spO2, spO22, bodyTemp, bodyTemp2, gsr } = rawTelemetry;
+    // Sanitize: treat undefined/NaN as null so a single bad packet
+    // cannot poison the EMA filter state permanently
+    const safe = (v) => (v == null || (typeof v === "number" && !isFinite(v))) ? null : v;
+
+    let heartRate  = safe(rawTelemetry.heartRate);
+    let heartRate2 = safe(rawTelemetry.heartRate2);
+    let spO2       = safe(rawTelemetry.spO2);
+    let spO22      = safe(rawTelemetry.spO22);
+    let bodyTemp   = safe(rawTelemetry.bodyTemp);
+    let bodyTemp2  = safe(rawTelemetry.bodyTemp2);
+    let gsr        = safe(rawTelemetry.gsr);
 
     // Hard clamp obviously impossible values
-    if (spO2 !== null) spO2 = Math.min(100, Math.max(0, spO2));
-    if (spO22 !== null) spO22 = Math.min(100, Math.max(0, spO22));
-    if (heartRate !== null) heartRate = Math.min(250, Math.max(0, heartRate));
+    if (spO2    !== null) spO2     = Math.min(100, Math.max(0, spO2));
+    if (spO22   !== null) spO22    = Math.min(100, Math.max(0, spO22));
+    if (heartRate  !== null) heartRate  = Math.min(250, Math.max(0, heartRate));
     if (heartRate2 !== null) heartRate2 = Math.min(250, Math.max(0, heartRate2));
-    
-    const filteredHR = this.hrFilter.process(heartRate);
-    const filteredSpO2 = this.spO2Filter.process(spO2);
-    const filteredTemp = this.tempFilter.process(bodyTemp);
 
-    const filteredHR2 = this.hr2Filter.process(heartRate2);
+    const filteredHR    = this.hrFilter.process(heartRate);
+    const filteredSpO2  = this.spO2Filter.process(spO2);
+    const filteredTemp  = this.tempFilter.process(bodyTemp);
+
+    const filteredHR2   = this.hr2Filter.process(heartRate2);
     const filteredSpO22 = this.spO22Filter.process(spO22);
     const filteredTemp2 = this.temp2Filter.process(bodyTemp2);
 
-    const filteredGsr = this.gsrFilter.process(gsr);
+    const filteredGsr   = this.gsrFilter.process(gsr);
 
     if (filteredGsr !== null && this.baselineGsr === null && this.gsrFilter.buffer.length >= 5) {
       this.baselineGsr = filteredGsr;
@@ -213,18 +239,7 @@ export class KabheatPacketFramer {
     this.buffer = lines.pop();
     for (const line of lines) this.#process(line, results);
 
-    // Some older firmware omits a trailing newline. Only accept that buffer if
-    // it is already a complete, valid packet; otherwise retain it for the next
-    // notification fragment.
-    if (REQUIRED_FIELDS.every((field) => this.buffer.toUpperCase().includes(`${field}:`))) {
-      try {
-        const telemetry = parseKabheatPacket(this.buffer);
-        results.push({ rawPacket: this.buffer.trim(), telemetry });
-        this.reset();
-      } catch {
-        // The packet may still be fragmented.
-      }
-    }
+
     return results;
   }
 
@@ -505,12 +520,14 @@ class BLEHardwareManager {
         this.diagnostics.packetCount += 1;
         
         // Apply Offsets
+        // Use != null (loose) to catch both null AND undefined, preventing NaN propagation
+        const t = result.telemetry;
         const telemetryWithOffsets = {
-          ...result.telemetry,
-          bodyTemp: result.telemetry.bodyTemp !== null ? result.telemetry.bodyTemp + this.tempOffset : null,
-          heartRate: result.telemetry.heartRate !== null ? result.telemetry.heartRate + this.hrOffset : null,
-          bodyTemp2: result.telemetry.bodyTemp2 !== null ? result.telemetry.bodyTemp2 + this.tempOffset : null,
-          heartRate2: result.telemetry.heartRate2 !== null ? result.telemetry.heartRate2 + this.hrOffset : null,
+          ...t,
+          bodyTemp:  t.bodyTemp  != null && isFinite(t.bodyTemp)  ? t.bodyTemp  + this.tempOffset : (t.bodyTemp  ?? null),
+          heartRate: t.heartRate != null && isFinite(t.heartRate) ? t.heartRate + this.hrOffset   : (t.heartRate ?? null),
+          bodyTemp2: t.bodyTemp2 != null && isFinite(t.bodyTemp2) ? t.bodyTemp2 + this.tempOffset : (t.bodyTemp2 ?? null),
+          heartRate2:t.heartRate2!= null && isFinite(t.heartRate2)? t.heartRate2+ this.hrOffset   : (t.heartRate2?? null),
         };
 
         const filteredTelemetry = this.telemetryFilter.process(telemetryWithOffsets);

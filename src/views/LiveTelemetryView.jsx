@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Activity, Heart, Thermometer, Wind, Zap, RefreshCw, Cpu, Dumbbell, Sparkles, MapPin } from "lucide-react";
 import { formatTemp } from "../utils/heatIndex";
 
@@ -10,12 +10,35 @@ export default function LiveTelemetryView({
   setOpenIoTPairing,
 }) {
 
+  // Grace period: suppress sensor-error badges for the first 10s after BLE connects
+  // (MAX30102 needs ~2s of samples; MLX90614 needs I2C settle time)
+  const WARMUP_MS = 10_000;
+  const [warmedUp, setWarmedUp] = useState(false);
+  const warmupRef = useRef(null);
+
+  useEffect(() => {
+    if (bleConnected) {
+      setWarmedUp(false);
+      warmupRef.current = setTimeout(() => setWarmedUp(true), WARMUP_MS);
+    } else {
+      clearTimeout(warmupRef.current);
+      setWarmedUp(false);
+    }
+    return () => clearTimeout(warmupRef.current);
+  }, [bleConnected]);
+
   const activityLevels = [
     { id: "sedentary", label: "Resting", icon: "🧘" },
     { id: "light", label: "Light", icon: "🚶" },
     { id: "moderate", label: "Moderate", icon: "🏃" },
     { id: "heavy", label: "Heavy Labor", icon: "🏋️" },
   ];
+
+  // If primary sensor (I2C) is unavailable, fall back to secondary (analog) sensor
+  const displayTemp = telemetry.bodyTemp ?? telemetry.bodyTemp2;
+  const displayTempLabel = telemetry.bodyTemp != null ? "Main" : telemetry.bodyTemp2 != null ? "Ref" : null;
+  const displayHR   = telemetry.heartRate ?? telemetry.heartRate2;
+  const displayHRLabel = telemetry.heartRate != null ? "Main" : telemetry.heartRate2 != null ? "Ref" : null;
 
   return (
     <div className="space-y-4">
@@ -76,15 +99,24 @@ export default function LiveTelemetryView({
           </div>
           <div className="flex items-baseline gap-1.5 mt-2">
             <span className="text-3xl font-extrabold text-white">
-              {telemetry.bodyTemp ? formatTemp(telemetry.bodyTemp, tempUnit).replace(/°[CF]/, "") : "--"}
+              {displayTemp != null ? formatTemp(displayTemp, tempUnit).replace(/°[CF]/, "") : "--"}
             </span>
             <span className="text-xs text-[var(--coral-glow)] font-bold">
               {tempUnit === "celsius" ? "°C" : "°F"}
             </span>
-            {!telemetry.bodyTemp && bleConnected && <span className="text-[10px] text-red-500 font-bold ml-2 bg-red-500/20 px-1.5 py-0.5 rounded">MAIN SENSOR ERROR</span>}
+            {displayTempLabel === "Ref" && (
+              <span className="text-[9px] text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded font-bold">REF</span>
+            )}
+            {displayTemp == null && bleConnected && (
+              <span className={`text-[10px] font-bold ml-2 px-1.5 py-0.5 rounded ${
+                warmedUp ? "text-red-500 bg-red-500/20" : "text-amber-400 bg-amber-500/20"
+              }`}>
+                {warmedUp ? "SENSOR ERROR" : "Warming up…"}
+              </span>
+            )}
           </div>
           <p className="text-[10px] text-[var(--honeydew)]/50 mt-1">
-            {telemetry.bodyTemp >= 38.5 ? "Hyperthermia Alert" : "Normal Skin Temp"}
+            {displayTemp != null && displayTemp >= 38.5 ? "Hyperthermia Alert" : displayTemp != null ? "Normal Skin Temp" : "No Data"}
           </p>
           
           {/* Support Sensor Reference */}
@@ -120,12 +152,21 @@ export default function LiveTelemetryView({
             </div>
           </div>
           <div className="flex items-baseline gap-1.5 mt-2">
-            <span className="text-3xl font-extrabold text-white">{telemetry.heartRate ?? "--"}</span>
+            <span className="text-3xl font-extrabold text-white">{displayHR ?? "--"}</span>
             <span className="text-xs text-red-400 font-bold">BPM</span>
-            {!telemetry.heartRate && bleConnected && <span className="text-[10px] text-red-500 font-bold ml-2 bg-red-500/20 px-1.5 py-0.5 rounded">MAIN SENSOR ERROR</span>}
+            {displayHRLabel === "Ref" && (
+              <span className="text-[9px] text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded font-bold">REF</span>
+            )}
+            {displayHR == null && bleConnected && (
+              <span className={`text-[10px] font-bold ml-2 px-1.5 py-0.5 rounded ${
+                warmedUp ? "text-red-500 bg-red-500/20" : "text-amber-400 bg-amber-500/20"
+              }`}>
+                {warmedUp ? "SENSOR ERROR" : "Warming up…"}
+              </span>
+            )}
           </div>
           <p className="text-[10px] text-[var(--honeydew)]/50 mt-1">
-            {telemetry.heartRate ? (telemetry.heartRate > 110 ? "High Cardiac Strain" : "Normal Pulse") : "No Data"}
+            {displayHR != null ? (displayHR > 110 ? "High Cardiac Strain" : "Normal Pulse") : bleConnected && !warmedUp ? "Detecting pulse…" : "No Data"}
           </p>
 
           {/* Support Sensor Reference */}
@@ -179,17 +220,17 @@ export default function LiveTelemetryView({
           </div>
           <div className="flex items-baseline gap-1.5 mt-2">
             <span className="text-3xl font-extrabold text-white">
-              {telemetry.gsr && telemetry.gsr > 0 ? Math.min(30000, Math.round(100000000 / telemetry.gsr)).toLocaleString() : "--"}
+              {telemetry.gsr !== null && telemetry.gsr > 0 ? telemetry.gsr.toLocaleString() : "--"}
             </span>
             <span className="text-xs text-[var(--soft-peach)] font-bold">Units</span>
           </div>
           <p className="text-[10px] text-[var(--honeydew)]/50 mt-1">
-            {telemetry.gsr && telemetry.gsr > 0 
-              ? (Math.min(30000, Math.round(100000000 / telemetry.gsr)) > 20000 ? "Heavy Sweating"
-                 : Math.min(30000, Math.round(100000000 / telemetry.gsr)) >= 5000 ? "Moderate Sweating"
-                 : Math.min(30000, Math.round(100000000 / telemetry.gsr)) >= 0 ? "Minimal Sweating"
+            {telemetry.gsr !== null && telemetry.gsr > 0 
+              ? (telemetry.gsr > 20000 ? "Heavy Sweating"
+                 : telemetry.gsr >= 5000 ? "Moderate Sweating"
+                 : telemetry.gsr >= 0 ? "Minimal Sweating"
                  : "Poor Contact") 
-              : "Waiting for data..."}
+              : "Sensor Error / Poor Contact"}
           </p>
         </div>
 
