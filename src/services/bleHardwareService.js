@@ -49,7 +49,8 @@ function parseKabheatPacket(rawString) {
   if (fields.has("GSR")) {
     try {
       const rawGsr = parseInteger(fields.get("GSR"), "GSR");
-      telemetry.gsr = rawGsr > 0 ? Math.max(1, 50001 - Math.min(50000, rawGsr)) : null;
+      // Raw ADC from Pico — spec: ADC = µS × 1,000, no inversion needed
+      telemetry.gsr = rawGsr > 0 ? rawGsr : null;
     } catch {}
   }
 

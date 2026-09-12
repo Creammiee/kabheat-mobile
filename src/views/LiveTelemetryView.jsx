@@ -210,27 +210,31 @@ export default function LiveTelemetryView({
           </p>
         </div>
 
-        {/* GSR Skin Resistance (Swapped for Display) */}
+        {/* GSR Skin Conductance — ADC = µS × 1,000 */}
         <div className="glass-panel rounded-3xl p-4 border border-[var(--soft-peach)]/30 relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-[var(--soft-peach)] uppercase tracking-wider">GSR Level</span>
+            <span className="text-[11px] font-semibold text-[var(--soft-peach)] uppercase tracking-wider">Skin Conductance</span>
             <div className="p-1.5 rounded-xl bg-[var(--soft-peach)]/20 text-[var(--soft-peach)]">
               <Wind size={16} />
             </div>
           </div>
           <div className="flex items-baseline gap-1.5 mt-2">
             <span className="text-3xl font-extrabold text-white">
-              {telemetry.gsr !== null && telemetry.gsr > 0 ? telemetry.gsr.toLocaleString() : "--"}
+              {telemetry.gsr != null && telemetry.gsr > 0
+                ? (telemetry.gsr / 1000).toFixed(2)
+                : "--"}
             </span>
-            <span className="text-xs text-[var(--soft-peach)] font-bold">Units</span>
+            <span className="text-xs text-[var(--soft-peach)] font-bold">µS</span>
           </div>
           <p className="text-[10px] text-[var(--honeydew)]/50 mt-1">
-            {telemetry.gsr !== null && telemetry.gsr > 0 
-              ? (telemetry.gsr > 20000 ? "Heavy Sweating"
-                 : telemetry.gsr >= 5000 ? "Moderate Sweating"
-                 : telemetry.gsr >= 0 ? "Minimal Sweating"
-                 : "Poor Contact") 
+            {telemetry.gsr != null && telemetry.gsr > 0
+              ? telemetry.gsr > 20000  ? "Heavy Sweating"      // > 20 µS
+              : telemetry.gsr >= 5000  ? "Moderate Sweating"   // 5–20 µS
+              :                          "Minimal Sweating"     // 0–5 µS
               : "Sensor Error / Poor Contact"}
+          </p>
+          <p className="text-[9px] text-[var(--honeydew)]/30 mt-1">
+            0–5 µS Minimal · 5–20 µS Moderate · &gt;20 µS Heavy
           </p>
         </div>
 
