@@ -51,10 +51,11 @@ export default function IoTSensorModal({
   };
 
   const connectedName = hardwareInfo?.deviceName || diagnostics.deviceName || "Device Connected";
-  const connectionBusy = scanning || ["scanning", "connecting", "nus-ready", "subscribing", "reconnecting"].includes(diagnostics.status);
+  const connectionBusy = scanning || ["scanning", "connecting", "discovering", "nus-ready", "subscribing", "reconnecting"].includes(diagnostics.status);
   const connectionLabel = {
     scanning: "Scanning for Kabheat…",
     connecting: "Connecting to Kabheat…",
+    discovering: "Discovering sensor services…",
     "nus-ready": "Nordic UART Service ready…",
     subscribing: "Starting live telemetry…",
     reconnecting: diagnostics.lastTransportError || "Reconnecting to Kabheat…",
@@ -67,7 +68,7 @@ export default function IoTSensorModal({
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-[var(--sky-blue)]/20 text-[var(--sky-blue)]"><Bluetooth size={18} /></div>
             <div>
-              <h3 className="text-sm font-bold text-white">IoT Sensor Pairing</h3>
+              <h3 className="text-sm font-bold text-white">IoT Sensor Connection</h3>
               <p className="text-[10px] text-[var(--honeydew)]/60">Manage hardware connection</p>
             </div>
           </div>
@@ -82,7 +83,7 @@ export default function IoTSensorModal({
           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-2 transition-all ${bleConnected ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.3)]" : "bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse"}`}>
             {bleConnected ? <Bluetooth size={24} /> : <Wifi size={24} />}
           </div>
-          <h4 className="text-xs font-extrabold text-white">{bleConnected ? connectedName : "No BLE Device Paired"}</h4>
+          <h4 className="text-xs font-extrabold text-white">{bleConnected ? connectedName : "No BLE Device Connected"}</h4>
           <p className="text-[10px] text-[var(--honeydew)]/60 mt-0.5 max-w-[230px]">
             {bleConnected ? "Connected to the Pico W Nordic UART Service." : "Scan for a nearby Kabheat sensor via Bluetooth."}
           </p>
