@@ -17,6 +17,8 @@ export const GATT_CHARACTERISTICS = {
 
 const KABHEAT_DEVICE_NAME = "Kabheat";
 const SCAN_TIMEOUT_MS = 10_000;
+const CONNECT_TIMEOUT_MS = 10_000;
+const NOTIFICATION_TIMEOUT_MS = 5_000;
 const RECONNECT_DELAY_MS = 2_000;
 const MAX_RECONNECT_ATTEMPTS = 3;
 const MAX_RECEIVE_BUFFER_BYTES = 4 * 1024;
@@ -435,13 +437,37 @@ class BLEHardwareManager {
 
   async #connectToDevice(device) {
     const deviceId = device.deviceId;
+    this.#setStatus("connecting");
+
+    // Android can retain a stale GATT connection after the peripheral or app
+    // restarts. Clear it before reconnecting; the plugin explicitly recommends
+    // this sequence for devices that have been connected previously.
+    try {
+      await BleClient.disconnect(deviceId);
+    } catch (error) {
+      console.debug("[BLE] no stale connection to clear", error);
+    }
+
+    if (!this.shouldReconnect) throw new Error("Connection cancelled");
+
     this.deviceId = deviceId;
     this.deviceName = device.name || KABHEAT_DEVICE_NAME;
-    this.#setStatus("connecting");
-    await BleClient.connect(deviceId, (id) => this.onDisconnected(id));
+    await BleClient.connect(
+      deviceId,
+      (id) => this.onDisconnected(id),
+      { timeout: CONNECT_TIMEOUT_MS },
+    );
     this.#assertCurrentConnection(deviceId);
 
-    this.#setStatus("nus-ready");
+    this.#setStatus("discovering");
+    try {
+      await BleClient.discoverServices(deviceId);
+    } catch (error) {
+      // connect() normally performs discovery itself. Continue so getServices()
+      // can use that result on platforms where explicit discovery is unavailable.
+      console.debug("[BLE] explicit service discovery unavailable", error);
+    }
+
     const services = await BleClient.getServices(deviceId);
     this.#assertCurrentConnection(deviceId);
     const nus = services.find((service) => sameUuid(service.uuid, GATT_SERVICES.NORDIC_UART_SERVICE));
@@ -451,6 +477,8 @@ class BLEHardwareManager {
     );
     if (!tx || !tx.properties.notify) throw new Error("TX notifications unavailable");
 
+    this.#setStatus("nus-ready");
+    this.#assertCurrentConnection(deviceId);
     this.#setStatus("subscribing");
     // Accept an early first packet while the native subscription completes, but
     // do not expose a connected UI state until this call resolves.
@@ -460,6 +488,7 @@ class BLEHardwareManager {
       GATT_SERVICES.NORDIC_UART_SERVICE,
       GATT_CHARACTERISTICS.NORDIC_TX,
       (value) => this.#onNotification(value),
+      { timeout: NOTIFICATION_TIMEOUT_MS },
     );
     if (!this.shouldReconnect || this.deviceId !== deviceId) {
       try {
